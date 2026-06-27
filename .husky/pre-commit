@@ -1,0 +1,47 @@
+#!/usr/bin/env sh
+set -e
+
+# ------------------------------------------------------------------------------
+# 1) Bloqueia commits sem nada staged (evita `git commit -a` acidental)
+# ------------------------------------------------------------------------------
+if git diff --cached --quiet; then
+  echo "✗ pre-commit: nada staged. Use 'git add <arquivo>' antes de commitar (sem 'git commit -a')."
+  exit 1
+fi
+
+# ------------------------------------------------------------------------------
+# 2) Bloqueia .env / arquivos de secret
+# ------------------------------------------------------------------------------
+BLOCKED=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '(^|/)\.env(\..*)?$|(^|/)secrets?(\..*)?$|(^|/)credentials\..*$' | grep -v '\.env\.example$' || true)
+if [ -n "$BLOCKED" ]; then
+  echo "✗ pre-commit: arquivos sensíveis detectados — não commitar:"
+  echo "$BLOCKED" | sed 's/^/   - /'
+  echo "Adicione ao .gitignore ou remova com: git restore --staged <arquivo>"
+  exit 1
+fi
+
+# ------------------------------------------------------------------------------
+# 3) Bloqueia chaves comuns no diff (heurística básica)
+# ------------------------------------------------------------------------------
+SECRET_PATTERNS='(AKIA[0-9A-Z]{16}|-----BEGIN (RSA|EC|OPENSSH|PRIVATE) KEY-----|sk_live_[0-9a-zA-Z]{24,}|ghp_[0-9a-zA-Z]{36}|xox[abprs]-[0-9a-zA-Z-]+)'
+LEAKED=$(git diff --cached -U0 -- ':!pnpm-lock.yaml' ':!*.lock' | grep -E "$SECRET_PATTERNS" || true)
+if [ -n "$LEAKED" ]; then
+  echo "✗ pre-commit: padrão de secret detectado no diff. Revise antes de commitar."
+  exit 1
+fi
+
+# ------------------------------------------------------------------------------
+# 4) Lint + typecheck + test em todo o monorepo
+# ------------------------------------------------------------------------------
+# Coverage gate (thresholds: 100%) NÃO roda aqui — fica no quality-fixer antes
+# do PR via `pnpm test:cov`. Pre-commit garante apenas regressão funcional.
+echo "→ pnpm lint"
+pnpm lint
+
+echo "→ pnpm typecheck"
+pnpm typecheck
+
+echo "→ pnpm test"
+pnpm test -- --run
+
+echo "✓ pre-commit OK"
