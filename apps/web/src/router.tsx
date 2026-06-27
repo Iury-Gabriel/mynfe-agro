@@ -51,6 +51,57 @@ export const router = createBrowserRouter([
   },
 
   {
+    // Protótipo visual navegável do AgroFlow (dados mockados, sem auth/backend).
+    // Vira o app real (`/app`) ao longo das fases do roadmap.
+    path: '/preview',
+    lazy: () =>
+      import('@/features/agroflow/agroflow-layout').then((m) => ({ Component: m.AgroFlowLayout })),
+    children: [
+      {
+        index: true,
+        lazy: () =>
+          import('@/features/dashboard/pages/dashboard-page').then((m) => ({
+            Component: m.DashboardPage,
+          })),
+      },
+      {
+        path: 'producao',
+        lazy: () =>
+          import('@/features/agroflow/pages/producao-page').then((m) => ({
+            Component: m.ProducaoPage,
+          })),
+      },
+      {
+        path: 'estoque',
+        lazy: () =>
+          import('@/features/agroflow/pages/estoque-page').then((m) => ({ Component: m.EstoquePage })),
+      },
+      {
+        path: 'vendas',
+        lazy: () =>
+          import('@/features/agroflow/pages/vendas-page').then((m) => ({ Component: m.VendasPage })),
+      },
+      {
+        path: 'fiscal',
+        lazy: () =>
+          import('@/features/agroflow/pages/fiscal-page').then((m) => ({ Component: m.FiscalPage })),
+      },
+      {
+        path: 'cadastros',
+        lazy: () =>
+          import('@/features/agroflow/pages/cadastros-page').then((m) => ({
+            Component: m.CadastrosPage,
+          })),
+      },
+      {
+        path: 'admin',
+        lazy: () =>
+          import('@/features/agroflow/pages/admin-page').then((m) => ({ Component: m.AdminPage })),
+      },
+    ],
+  },
+
+  {
     element: <AuthLayout />,
     children: [
       {

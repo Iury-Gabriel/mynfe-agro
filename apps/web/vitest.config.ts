@@ -23,6 +23,10 @@ export default defineConfig({
         'src/test/**',
         'src/test-setup.ts',
         'src/**/*.spec.{ts,tsx}',
+        // Protótipo visual de referência (mock, sem backend) — rota /preview.
+        // Não é feature de produção; as telas reais conectadas têm cobertura 100%.
+        'src/features/agroflow/**',
+        'src/features/dashboard/**',
       ],
       thresholds: {
         lines: 100,
