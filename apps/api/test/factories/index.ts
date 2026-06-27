@@ -1,4 +1,7 @@
+export * from './make-cliente'
 export * from './make-empresa'
+export * from './make-produto'
 export * from './make-role'
+export * from './make-tabela-preco-cliente'
 export * from './make-tenant'
 export * from './make-user'

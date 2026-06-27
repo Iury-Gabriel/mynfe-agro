@@ -3,9 +3,14 @@ import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core'
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler'
 import { ThrottlerStorageRedisService } from 'nestjs-throttler-storage-redis'
 
+import { AreasController } from './controllers/admin/areas.controller'
 import { EmpresasController } from './controllers/admin/empresas.controller'
+import { FazendasController } from './controllers/admin/fazendas.controller'
+import { ProdutosController } from './controllers/admin/produtos.controller'
 import { RolesController } from './controllers/admin/roles.controller'
+import { TabelaPrecosController } from './controllers/admin/tabela-precos.controller'
 import { UsersController } from './controllers/admin/users.controller'
+import { ClientesController } from './controllers/cliente/clientes.controller'
 import { HealthController } from './controllers/health.controller'
 import { AuthGuard } from './guards/auth.guard'
 import { EmpresaAccessGuard } from './guards/empresa-access.guard'
@@ -14,11 +19,31 @@ import { SecurityAuditInterceptor } from './interceptors/security-audit.intercep
 import { identityTracker, ipTracker } from './throttler/throttler-trackers'
 
 import { SetPasswordPort } from '@/domain/application/ports/set-password-port'
+import { CreateAreaUseCase } from '@/domain/application/use-cases/areas/create-area-use-case'
+import { DeleteAreaUseCase } from '@/domain/application/use-cases/areas/delete-area-use-case'
+import { ListAreasUseCase } from '@/domain/application/use-cases/areas/list-areas-use-case'
+import { UpdateAreaUseCase } from '@/domain/application/use-cases/areas/update-area-use-case'
+import { CreateClienteUseCase } from '@/domain/application/use-cases/clientes/create-cliente-use-case'
+import { DeleteClienteUseCase } from '@/domain/application/use-cases/clientes/delete-cliente-use-case'
+import { ListClientesUseCase } from '@/domain/application/use-cases/clientes/list-clientes-use-case'
+import { UpdateClienteUseCase } from '@/domain/application/use-cases/clientes/update-cliente-use-case'
 import { ActivateEmpresaUseCase } from '@/domain/application/use-cases/empresas/activate-empresa-use-case'
 import { CreateEmpresaUseCase } from '@/domain/application/use-cases/empresas/create-empresa-use-case'
 import { DeactivateEmpresaUseCase } from '@/domain/application/use-cases/empresas/deactivate-empresa-use-case'
 import { ListEmpresasUseCase } from '@/domain/application/use-cases/empresas/list-empresas-use-case'
 import { UpdateEmpresaUseCase } from '@/domain/application/use-cases/empresas/update-empresa-use-case'
+import { CreateFazendaUseCase } from '@/domain/application/use-cases/fazendas/create-fazenda-use-case'
+import { DeleteFazendaUseCase } from '@/domain/application/use-cases/fazendas/delete-fazenda-use-case'
+import { ListFazendasUseCase } from '@/domain/application/use-cases/fazendas/list-fazendas-use-case'
+import { UpdateFazendaUseCase } from '@/domain/application/use-cases/fazendas/update-fazenda-use-case'
+import { CreateTabelaPrecoUseCase } from '@/domain/application/use-cases/precos/create-tabela-preco-use-case'
+import { DeleteTabelaPrecoUseCase } from '@/domain/application/use-cases/precos/delete-tabela-preco-use-case'
+import { ListTabelaPrecosUseCase } from '@/domain/application/use-cases/precos/list-tabela-precos-use-case'
+import { ActivateProdutoUseCase } from '@/domain/application/use-cases/produtos/activate-produto-use-case'
+import { CreateProdutoUseCase } from '@/domain/application/use-cases/produtos/create-produto-use-case'
+import { DeactivateProdutoUseCase } from '@/domain/application/use-cases/produtos/deactivate-produto-use-case'
+import { ListProdutosUseCase } from '@/domain/application/use-cases/produtos/list-produtos-use-case'
+import { UpdateProdutoUseCase } from '@/domain/application/use-cases/produtos/update-produto-use-case'
 import { CreateRoleUseCase } from '@/domain/application/use-cases/roles/create-role-use-case'
 import { DeleteRoleUseCase } from '@/domain/application/use-cases/roles/delete-role-use-case'
 import { ListRolesUseCase } from '@/domain/application/use-cases/roles/list-roles-use-case'
@@ -59,7 +84,17 @@ import { EnvService } from '@/infra/env/env.service'
       }),
     }),
   ],
-  controllers: [HealthController, RolesController, UsersController, EmpresasController],
+  controllers: [
+    HealthController,
+    RolesController,
+    UsersController,
+    EmpresasController,
+    FazendasController,
+    AreasController,
+    ClientesController,
+    ProdutosController,
+    TabelaPrecosController,
+  ],
   providers: [
     // Ordem dos APP_GUARD importa: Throttler → Auth → Permission → EmpresaAccess.
     { provide: APP_GUARD, useClass: ThrottlerGuard },
@@ -72,6 +107,26 @@ import { EnvService } from '@/infra/env/env.service'
     UpdateEmpresaUseCase,
     ActivateEmpresaUseCase,
     DeactivateEmpresaUseCase,
+    ListFazendasUseCase,
+    CreateFazendaUseCase,
+    UpdateFazendaUseCase,
+    DeleteFazendaUseCase,
+    ListAreasUseCase,
+    CreateAreaUseCase,
+    UpdateAreaUseCase,
+    DeleteAreaUseCase,
+    ListClientesUseCase,
+    CreateClienteUseCase,
+    UpdateClienteUseCase,
+    DeleteClienteUseCase,
+    ListProdutosUseCase,
+    CreateProdutoUseCase,
+    UpdateProdutoUseCase,
+    ActivateProdutoUseCase,
+    DeactivateProdutoUseCase,
+    ListTabelaPrecosUseCase,
+    CreateTabelaPrecoUseCase,
+    DeleteTabelaPrecoUseCase,
     CreateRoleUseCase,
     UpdateRoleUseCase,
     DeleteRoleUseCase,

@@ -24,8 +24,16 @@ describe('PERMISSIONS', () => {
     expect(PERMISSIONS).toContain('empresa:status')
   })
 
-  it('tem exatamente 9 permissões', () => {
-    expect(PERMISSIONS).toHaveLength(9)
+  it('contém as permissões de cadastros', () => {
+    expect(PERMISSIONS).toContain('fazenda:read')
+    expect(PERMISSIONS).toContain('area:create')
+    expect(PERMISSIONS).toContain('cliente:update')
+    expect(PERMISSIONS).toContain('produto:status')
+    expect(PERMISSIONS).toContain('preco:create')
+  })
+
+  it('tem exatamente 28 permissões', () => {
+    expect(PERMISSIONS).toHaveLength(28)
   })
 })
 
