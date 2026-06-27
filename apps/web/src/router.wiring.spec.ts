@@ -49,7 +49,19 @@ describe('router wiring', () => {
 
   it('invoca os loaders de rota (privateLoader + requirePermission)', async () => {
     mockGet.mockResolvedValue({
-      data: { user: { id: 'u1' }, permissions: ['admin:roles', 'admin:users', 'empresa:read'] },
+      data: {
+        user: { id: 'u1' },
+        permissions: [
+          'admin:roles',
+          'admin:users',
+          'empresa:read',
+          'fazenda:read',
+          'area:read',
+          'cliente:read',
+          'produto:read',
+          'preco:read',
+        ],
+      },
     })
     const { loader } = collect(router.routes as RouteNode[])
     expect(loader.length).toBeGreaterThan(0)

@@ -140,6 +140,44 @@ export const router = createBrowserRouter([
         loader: () => requirePermission('empresa:read'),
       },
       {
+        path: 'fazendas',
+        lazy: () =>
+          import('@/features/admin/pages/fazendas-page').then((m) => ({
+            Component: m.FazendasPage,
+          })),
+        loader: () => requirePermission('fazenda:read'),
+      },
+      {
+        path: 'areas',
+        lazy: () =>
+          import('@/features/admin/pages/areas-page').then((m) => ({ Component: m.AreasPage })),
+        loader: () => requirePermission('area:read'),
+      },
+      {
+        path: 'clientes',
+        lazy: () =>
+          import('@/features/admin/pages/clientes-page').then((m) => ({
+            Component: m.ClientesPage,
+          })),
+        loader: () => requirePermission('cliente:read'),
+      },
+      {
+        path: 'produtos',
+        lazy: () =>
+          import('@/features/admin/pages/produtos-page').then((m) => ({
+            Component: m.ProdutosPage,
+          })),
+        loader: () => requirePermission('produto:read'),
+      },
+      {
+        path: 'tabela-precos',
+        lazy: () =>
+          import('@/features/admin/pages/tabela-precos-page').then((m) => ({
+            Component: m.TabelaPrecosPage,
+          })),
+        loader: () => requirePermission('preco:read'),
+      },
+      {
         path: 'admin/roles',
         lazy: () =>
           import('@/features/admin/pages/roles-page').then((m) => ({ Component: m.RolesPage })),
