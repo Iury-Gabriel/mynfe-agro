@@ -25,7 +25,9 @@ export class PrismaRoleMapper {
 
   static toPrismaCreate(
     role: Role,
-  ): Omit<PrismaRole, 'createdAt' | 'updatedAt'> & { permissions: { create: { permission: string }[] } } {
+  ): Omit<PrismaRole, 'createdAt' | 'updatedAt' | 'tenantId'> & {
+    permissions: { create: { permission: string }[] }
+  } {
     return {
       id: role.id.toString(),
       name: role.name,
