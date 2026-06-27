@@ -1,4 +1,4 @@
-import { AxiosError } from 'axios'
+import { AxiosError, type AxiosInstance } from 'axios'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@/env', () => ({ env: { VITE_API_BASE_URL: 'http://localhost:3333' } }))
@@ -35,6 +35,39 @@ describe('api (baseURL)', () => {
     const successFn = manager.handlers[0]?.fulfilled
     const fakeResponse = { status: 200, data: { ok: true } }
     expect(successFn?.(fakeResponse)).toBe(fakeResponse)
+  })
+})
+
+describe('api (request interceptor — x-active-empresa-id)', () => {
+  afterEach(() => {
+    vi.resetModules()
+    vi.restoreAllMocks()
+    window.localStorage.clear()
+  })
+
+  function requestHandler(api: AxiosInstance) {
+    const manager = api.interceptors.request as unknown as {
+      handlers: ({ fulfilled: (config: unknown) => unknown } | null)[]
+    }
+    return manager.handlers[0]?.fulfilled
+  }
+
+  it('injeta o header quando há empresa ativa no storage', async () => {
+    window.localStorage.setItem('agroflow.active-empresa-id', 'e-123')
+    const { api } = await import('./api-client')
+    const set = vi.fn()
+    const result = requestHandler(api)?.({ headers: { set } }) as { headers: { set: typeof set } }
+
+    expect(set).toHaveBeenCalledWith('x-active-empresa-id', 'e-123')
+    expect(result.headers.set).toBe(set)
+  })
+
+  it('não injeta o header quando não há empresa ativa', async () => {
+    const { api } = await import('./api-client')
+    const set = vi.fn()
+    requestHandler(api)?.({ headers: { set } })
+
+    expect(set).not.toHaveBeenCalled()
   })
 })
 

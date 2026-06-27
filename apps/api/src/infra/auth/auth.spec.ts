@@ -96,7 +96,7 @@ describe('createAuth', () => {
     })
   })
 
-  it('registra o plugin customSession cujo callback devolve { user, session, permissions }', async () => {
+  it('registra o plugin customSession cujo callback devolve { user, session, permissions, empresaIds }', async () => {
     const findMany = vi.fn().mockResolvedValue([
       {
         role: {
@@ -104,8 +104,10 @@ describe('createAuth', () => {
         },
       },
     ])
+    const empresaFindMany = vi.fn().mockResolvedValue([{ empresaId: 'empresa-1' }, { empresaId: 'empresa-2' }])
     const prisma = {
       userRoleAssignment: { findMany },
+      usuarioEmpresa: { findMany: empresaFindMany },
     } as unknown as PrismaClient
     const cache = makeCache()
 
@@ -123,6 +125,7 @@ describe('createAuth', () => {
       user,
       session,
       permissions: ['admin:users', 'admin:roles'],
+      empresaIds: ['empresa-1', 'empresa-2'],
     })
     expect(cache.get).toHaveBeenCalledWith('permissions:user:u1')
     expect(cache.set).toHaveBeenCalledWith('permissions:user:u1', ['admin:users', 'admin:roles'], {
@@ -130,10 +133,12 @@ describe('createAuth', () => {
     })
   })
 
-  it('customSession devolve permissions do cache sem consultar o banco em hit', async () => {
+  it('customSession devolve permissions do cache sem consultar roles em hit, mas sempre carrega empresaIds', async () => {
     const findMany = vi.fn()
+    const empresaFindMany = vi.fn().mockResolvedValue([{ empresaId: 'empresa-9' }])
     const prisma = {
       userRoleAssignment: { findMany },
+      usuarioEmpresa: { findMany: empresaFindMany },
     } as unknown as PrismaClient
     const cache = makeCache()
     cache.get.mockResolvedValue(['cached:perm'])
@@ -143,11 +148,12 @@ describe('createAuth', () => {
     const callback = customSessionMock.mock.calls[0][0] as (arg: {
       user: { id: string }
       session: unknown
-    }) => Promise<{ permissions: string[] }>
+    }) => Promise<{ permissions: string[]; empresaIds: string[] }>
 
     const result = await callback({ user: { id: 'u1' }, session: { id: 's1' } })
 
     expect(result.permissions).toEqual(['cached:perm'])
+    expect(result.empresaIds).toEqual(['empresa-9'])
     expect(findMany).not.toHaveBeenCalled()
     expect(cache.set).not.toHaveBeenCalled()
   })
@@ -160,6 +166,7 @@ describe('createAuth', () => {
           { role: { permissions: [{ permission: 'admin:users' }, { permission: 'admin:roles' }] } },
         ]),
       },
+      usuarioEmpresa: { findMany: vi.fn().mockResolvedValue([]) },
     } as unknown as PrismaClient
 
     createAuth(prisma, makeEnv(), makeRedis(), makeCache())
@@ -167,12 +174,13 @@ describe('createAuth', () => {
     const callback = customSessionMock.mock.calls[0][0] as (arg: {
       user: { id: string }
       session: unknown
-    }) => Promise<{ permissions: string[] }>
+    }) => Promise<{ permissions: string[]; empresaIds: string[] }>
     const user = { id: 'u1' }
     const session = { id: 's1' }
 
     const result = await callback({ user, session })
     expect(result.permissions).toEqual(['admin:users', 'admin:roles'])
+    expect(result.empresaIds).toEqual([])
   })
 
   it('customSession loga e propaga erro ao falhar carregando permissions', async () => {
@@ -181,6 +189,7 @@ describe('createAuth', () => {
       userRoleAssignment: {
         findMany: vi.fn().mockRejectedValue(new Error('db down')),
       },
+      usuarioEmpresa: { findMany: vi.fn().mockResolvedValue([]) },
     } as unknown as PrismaClient
 
     createAuth(prisma, makeEnv(), makeRedis(), makeCache())

@@ -1,5 +1,7 @@
 export { CannotDeleteSelfError } from './cannot-delete-self-error'
 export { EmailAlreadyInUseError } from './email-already-in-use-error'
+export { EmpresaNotFoundError } from './empresa-not-found-error'
+export { InvalidCnpjCpfError } from './invalid-cnpj-cpf-error'
 export { LastAdminError } from './last-admin-error'
 export { ProtectedUserError } from './protected-user-error'
 export { RoleInUseError } from './role-in-use-error'

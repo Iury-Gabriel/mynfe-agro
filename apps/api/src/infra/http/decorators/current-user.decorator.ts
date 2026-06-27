@@ -7,7 +7,9 @@ export interface SessionUser {
   email: string
   name: string
   emailVerified: boolean
+  tenantId: string | null
   permissions?: readonly Permission[]
+  empresaIds?: readonly string[]
 }
 
 export const CurrentUser = createParamDecorator(

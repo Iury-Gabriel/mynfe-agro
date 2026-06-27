@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 
 import { CannotDeleteSelfError } from './cannot-delete-self-error'
 import { EmailAlreadyInUseError } from './email-already-in-use-error'
+import { EmpresaNotFoundError } from './empresa-not-found-error'
+import { InvalidCnpjCpfError } from './invalid-cnpj-cpf-error'
 import { LastAdminError } from './last-admin-error'
 import { RoleInUseError } from './role-in-use-error'
 import { RoleIsSystemError } from './role-is-system-error'
@@ -91,6 +93,26 @@ describe('EmailAlreadyInUseError', () => {
 
     expect(sut.kind).toBe('EmailAlreadyInUse')
     expect(sut.message).toBe('O e-mail "ada@example.com" já está em uso.')
+    expect(sut).toBeInstanceOf(Error)
+  })
+})
+
+describe('EmpresaNotFoundError', () => {
+  it('tem kind correto e mensagem', () => {
+    const sut = new EmpresaNotFoundError()
+
+    expect(sut.kind).toBe('EmpresaNotFound')
+    expect(sut.message).toBe('Empresa não encontrada.')
+    expect(sut).toBeInstanceOf(Error)
+  })
+})
+
+describe('InvalidCnpjCpfError', () => {
+  it('tem kind correto e mensagem com o documento cru', () => {
+    const sut = new InvalidCnpjCpfError('123')
+
+    expect(sut.kind).toBe('InvalidCnpjCpf')
+    expect(sut.message).toBe('O documento "123" não é um CNPJ ou CPF válido.')
     expect(sut).toBeInstanceOf(Error)
   })
 })

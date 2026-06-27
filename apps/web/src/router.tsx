@@ -132,6 +132,14 @@ export const router = createBrowserRouter([
     loader: privateLoader,
     children: [
       {
+        path: 'empresas',
+        lazy: () =>
+          import('@/features/admin/pages/empresas-page').then((m) => ({
+            Component: m.EmpresasPage,
+          })),
+        loader: () => requirePermission('empresa:read'),
+      },
+      {
         path: 'admin/roles',
         lazy: () =>
           import('@/features/admin/pages/roles-page').then((m) => ({ Component: m.RolesPage })),

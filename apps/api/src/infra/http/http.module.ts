@@ -3,15 +3,22 @@ import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core'
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler'
 import { ThrottlerStorageRedisService } from 'nestjs-throttler-storage-redis'
 
+import { EmpresasController } from './controllers/admin/empresas.controller'
 import { RolesController } from './controllers/admin/roles.controller'
 import { UsersController } from './controllers/admin/users.controller'
 import { HealthController } from './controllers/health.controller'
 import { AuthGuard } from './guards/auth.guard'
+import { EmpresaAccessGuard } from './guards/empresa-access.guard'
 import { PermissionGuard } from './guards/permission.guard'
 import { SecurityAuditInterceptor } from './interceptors/security-audit.interceptor'
 import { identityTracker, ipTracker } from './throttler/throttler-trackers'
 
 import { SetPasswordPort } from '@/domain/application/ports/set-password-port'
+import { ActivateEmpresaUseCase } from '@/domain/application/use-cases/empresas/activate-empresa-use-case'
+import { CreateEmpresaUseCase } from '@/domain/application/use-cases/empresas/create-empresa-use-case'
+import { DeactivateEmpresaUseCase } from '@/domain/application/use-cases/empresas/deactivate-empresa-use-case'
+import { ListEmpresasUseCase } from '@/domain/application/use-cases/empresas/list-empresas-use-case'
+import { UpdateEmpresaUseCase } from '@/domain/application/use-cases/empresas/update-empresa-use-case'
 import { CreateRoleUseCase } from '@/domain/application/use-cases/roles/create-role-use-case'
 import { DeleteRoleUseCase } from '@/domain/application/use-cases/roles/delete-role-use-case'
 import { ListRolesUseCase } from '@/domain/application/use-cases/roles/list-roles-use-case'
@@ -52,13 +59,19 @@ import { EnvService } from '@/infra/env/env.service'
       }),
     }),
   ],
-  controllers: [HealthController, RolesController, UsersController],
+  controllers: [HealthController, RolesController, UsersController, EmpresasController],
   providers: [
-    // Ordem dos APP_GUARD importa: Throttler → Auth → Permission.
+    // Ordem dos APP_GUARD importa: Throttler → Auth → Permission → EmpresaAccess.
     { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_GUARD, useClass: AuthGuard },
     { provide: APP_GUARD, useClass: PermissionGuard },
+    { provide: APP_GUARD, useClass: EmpresaAccessGuard },
     { provide: APP_INTERCEPTOR, useClass: SecurityAuditInterceptor },
+    ListEmpresasUseCase,
+    CreateEmpresaUseCase,
+    UpdateEmpresaUseCase,
+    ActivateEmpresaUseCase,
+    DeactivateEmpresaUseCase,
     CreateRoleUseCase,
     UpdateRoleUseCase,
     DeleteRoleUseCase,

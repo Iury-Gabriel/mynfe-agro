@@ -35,13 +35,19 @@ export class AuthGuard implements CanActivate {
     const session = await this.auth.getSession(headers)
     if (!session) throw CustomHttpException.unauthorized()
 
-    const sessionWithPerms = session as { user: typeof session.user; permissions?: readonly string[] }
+    const enriched = session as {
+      user: typeof session.user & { tenantId?: string | null }
+      permissions?: readonly string[]
+      empresaIds?: readonly string[]
+    }
     req.user = {
       id: session.user.id,
       email: session.user.email,
       name: session.user.name,
       emailVerified: session.user.emailVerified,
-      permissions: (sessionWithPerms.permissions ?? []) as readonly Permission[],
+      tenantId: enriched.user.tenantId ?? null,
+      permissions: (enriched.permissions ?? []) as readonly Permission[],
+      empresaIds: enriched.empresaIds ?? [],
     }
     return true
   }

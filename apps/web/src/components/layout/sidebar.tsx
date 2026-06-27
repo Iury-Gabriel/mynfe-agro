@@ -14,6 +14,7 @@ interface SidebarItem {
 }
 
 const ITEMS: readonly SidebarItem[] = [
+  { to: '/app/empresas', label: 'Empresas', requiresAny: ['empresa:read'] },
   { to: '/app/admin/users', label: 'Usuarios', requiresAny: ['admin:users'] },
   { to: '/app/admin/roles', label: 'Cargos', requiresAny: ['admin:roles'] },
 ]

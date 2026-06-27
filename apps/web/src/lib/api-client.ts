@@ -1,6 +1,7 @@
 import axios, { type AxiosError, type AxiosInstance } from 'axios'
 
 import { env } from '@/env'
+import { ACTIVE_EMPRESA_HEADER, getActiveEmpresaId } from '@/lib/active-empresa'
 import { ApiError } from '@/lib/api-error'
 
 // Dev: baseURL vazia → request relativa cai no proxy do Vite (mesmo origin → cookie SameSite=Lax viaja).
@@ -10,6 +11,14 @@ export const api: AxiosInstance = axios.create({
   baseURL: import.meta.env.DEV ? '' : env.VITE_API_BASE_URL,
   withCredentials: true,
   timeout: 15_000,
+})
+
+api.interceptors.request.use((config) => {
+  const empresaId = getActiveEmpresaId()
+  if (empresaId) {
+    config.headers.set(ACTIVE_EMPRESA_HEADER, empresaId)
+  }
+  return config
 })
 
 export function onResponseError(err: AxiosError): Promise<never> {

@@ -78,6 +78,38 @@ describe('AuthGuard', () => {
     expect((req.user as Record<string, unknown>).permissions).toEqual([])
   })
 
+  it('mescla tenantId e empresaIds do customSession no req.user', async () => {
+    const reflector = { getAllAndOverride: vi.fn().mockReturnValue(false) } as unknown as Reflector
+    const user = { id: 'u1', email: 'a@b.com', tenantId: 'tenant-1' }
+    const auth = {
+      getSession: vi
+        .fn()
+        .mockResolvedValue({ user, permissions: [], empresaIds: ['empresa-1', 'empresa-2'] }),
+    } as unknown as AuthService
+    const sut = new AuthGuard(reflector, auth)
+    const req: Record<string, unknown> = { headers: {} }
+
+    await sut.canActivate(makeContext(req))
+
+    expect(req.user).toMatchObject({
+      tenantId: 'tenant-1',
+      empresaIds: ['empresa-1', 'empresa-2'],
+    })
+  })
+
+  it('define tenantId null e empresaIds vazio quando ausentes na sessão', async () => {
+    const reflector = { getAllAndOverride: vi.fn().mockReturnValue(false) } as unknown as Reflector
+    const auth = {
+      getSession: vi.fn().mockResolvedValue({ user: { id: 'u1', email: 'a@b.com' } }),
+    } as unknown as AuthService
+    const sut = new AuthGuard(reflector, auth)
+    const req: Record<string, unknown> = { headers: {} }
+
+    await sut.canActivate(makeContext(req))
+
+    expect(req.user).toMatchObject({ tenantId: null, empresaIds: [] })
+  })
+
   it('junta header em array antes de montar a sessão', async () => {
     const reflector = { getAllAndOverride: vi.fn().mockReturnValue(false) } as unknown as Reflector
     const getSession = vi.fn().mockResolvedValue({ user: { id: 'u1' } })
