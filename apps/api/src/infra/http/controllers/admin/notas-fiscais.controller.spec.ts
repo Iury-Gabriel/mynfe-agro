@@ -210,6 +210,28 @@ describe(NotasFiscaisController.name, () => {
       expect(res.body.notas[0].status).toBe('autorizada')
     })
 
+    it('filtra por pedidoId', async () => {
+      notas.notas.push(
+        makeNotaFiscal({ id: 'n-1', empresaEmitenteId: 'empresa-1', pedidoId: 'pedido-1' }),
+        makeNotaFiscal({ id: 'n-2', empresaEmitenteId: 'empresa-1', pedidoId: 'pedido-2' }),
+      )
+
+      const res = await request(app.getHttpServer()).get(
+        '/notas-fiscais?empresaId=empresa-1&pedidoId=pedido-1',
+      )
+
+      expect(res.status).toBe(200)
+      expect(res.body.notas).toHaveLength(1)
+      expect(res.body.notas[0].id).toBe('n-1')
+    })
+
+    it('rejeita query param desconhecido (schema strict)', async () => {
+      const res = await request(app.getHttpServer()).get(
+        '/notas-fiscais?empresaId=empresa-1&foo=bar',
+      )
+      expect(res.status).toBe(400)
+    })
+
     it('retorna 400 quando falta empresaId', async () => {
       const res = await request(app.getHttpServer()).get('/notas-fiscais')
       expect(res.status).toBe(400)

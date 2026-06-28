@@ -6,6 +6,7 @@ import type { NotaFiscalEvento } from '@/domain/enterprise/entities/nota-fiscal-
 export interface NotaFiscalFiltros {
   status?: NotaFiscalStatus
   clienteId?: string
+  pedidoId?: string
 }
 
 export interface CriarEmissaoArgs {

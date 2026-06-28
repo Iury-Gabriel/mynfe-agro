@@ -38,6 +38,7 @@ export interface EmpresaProps {
   ambienteFiscal: AmbienteFiscal
   serieNfe: number | null
   proximaNumeracaoNfe: number
+  plugnotasConfig: Record<string, unknown> | null
   status: EmpresaStatus
   endereco: EmpresaEndereco
   createdAt: Date
@@ -117,6 +118,10 @@ export class Empresa extends AggregateRoot<EmpresaProps> {
     return this.props.proximaNumeracaoNfe
   }
 
+  get plugnotasConfig(): Readonly<Record<string, unknown>> | null {
+    return this.props.plugnotasConfig
+  }
+
   get status() {
     return this.props.status
   }
@@ -182,6 +187,7 @@ export class Empresa extends AggregateRoot<EmpresaProps> {
       | 'ieProdutorRural'
       | 'serieNfe'
       | 'proximaNumeracaoNfe'
+      | 'plugnotasConfig'
       | 'status'
       | 'endereco'
       | 'deletedAt'
@@ -191,6 +197,7 @@ export class Empresa extends AggregateRoot<EmpresaProps> {
       ieProdutorRural?: string | null
       serieNfe?: number | null
       proximaNumeracaoNfe?: number
+      plugnotasConfig?: Record<string, unknown> | null
       status?: EmpresaStatus
       endereco?: Partial<EmpresaEndereco>
       deletedAt?: Date | null
@@ -205,6 +212,7 @@ export class Empresa extends AggregateRoot<EmpresaProps> {
         ieProdutorRural: props.ieProdutorRural ?? null,
         serieNfe: props.serieNfe ?? null,
         proximaNumeracaoNfe: props.proximaNumeracaoNfe ?? 1,
+        plugnotasConfig: props.plugnotasConfig ?? null,
         status: props.status ?? 'ativo',
         endereco: { ...EMPTY_ENDERECO, ...props.endereco },
         deletedAt: props.deletedAt ?? null,

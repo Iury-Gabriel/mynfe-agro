@@ -13,6 +13,7 @@ import { NotaFiscalRepository } from '@/domain/application/repositories/nota-fis
 function matchesFiltros(nota: NotaFiscal, filtros: NotaFiscalFiltros): boolean {
   if (filtros.status !== undefined && nota.status !== filtros.status) return false
   if (filtros.clienteId !== undefined && nota.clienteId !== filtros.clienteId) return false
+  if (filtros.pedidoId !== undefined && nota.pedidoId !== filtros.pedidoId) return false
   return true
 }
 

@@ -1,10 +1,11 @@
-import { Pencil, Plus, Power, PowerOff } from 'lucide-react'
+import { Pencil, Plus, Power, PowerOff, Receipt } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 import type { Empresa } from '@/features/admin/api/empresas-api'
 import type { ReactElement } from 'react'
 
 import { useEmpresas } from '@/features/admin/api/empresas-api'
+import { EmpresaFiscalDialog } from '@/features/admin/components/empresas/empresa-fiscal-dialog'
 import { EmpresaFormDialog } from '@/features/admin/components/empresas/empresa-form-dialog'
 import { EmpresaStatusDialog } from '@/features/admin/components/empresas/empresa-status-dialog'
 import {
@@ -44,6 +45,7 @@ export function EmpresasPage(): ReactElement {
   const [search, setSearch] = useState('')
   const [formOpen, setFormOpen] = useState(false)
   const [statusOpen, setStatusOpen] = useState(false)
+  const [fiscalOpen, setFiscalOpen] = useState(false)
   const [selected, setSelected] = useState<Empresa | null>(null)
 
   const { data, isLoading, isError, refetch } = useEmpresas({ page })
@@ -77,6 +79,11 @@ export function EmpresasPage(): ReactElement {
     setStatusOpen(true)
   }
 
+  function openFiscal(empresa: Empresa) {
+    setSelected(empresa)
+    setFiscalOpen(true)
+  }
+
   const rows: Row[] = filtered.map((empresa) => ({
     id: empresa.id,
     razaoSocial: (
@@ -105,6 +112,11 @@ export function EmpresasPage(): ReactElement {
         {canUpdate && (
           <ActionButton variant="ghost" size="sm" onClick={() => openEdit(empresa)}>
             <Pencil /> Editar
+          </ActionButton>
+        )}
+        {canUpdate && (
+          <ActionButton variant="ghost" size="sm" onClick={() => openFiscal(empresa)}>
+            <Receipt /> Fiscal
           </ActionButton>
         )}
         {canStatus && (
@@ -197,6 +209,18 @@ export function EmpresasPage(): ReactElement {
           open={statusOpen}
           onOpenChange={(open) => {
             setStatusOpen(open)
+            if (!open) setSelected(null)
+          }}
+        />
+      )}
+
+      {fiscalOpen && selected && (
+        <EmpresaFiscalDialog
+          empresa={selected}
+          canEdit={canUpdate}
+          open={fiscalOpen}
+          onOpenChange={(open) => {
+            setFiscalOpen(open)
             if (!open) setSelected(null)
           }}
         />

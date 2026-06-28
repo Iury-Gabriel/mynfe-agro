@@ -35,6 +35,10 @@ export interface Empresa {
   crt: string
   ambienteFiscal: AmbienteFiscal
   serieNfe: number | null
+  // Campos fiscais opcionais — só presentes quando o presenter do backend os expõe.
+  // `plugnotasConfigurado` é um booleano derivado; o segredo nunca trafega ao front.
+  proximaNumeracaoNfe?: number | null
+  plugnotasConfigurado?: boolean
   status: EmpresaStatus
   endereco: EmpresaEndereco
   createdAt: string

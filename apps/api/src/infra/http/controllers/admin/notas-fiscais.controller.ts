@@ -52,6 +52,7 @@ const listNotasQuerySchema = z
     empresaId: z.string().min(1),
     status: z.enum(NOTA_FISCAL_STATUSES).optional(),
     clienteId: z.string().min(1).optional(),
+    pedidoId: z.string().min(1).optional(),
     page: z.coerce.number().int().min(1).default(1),
     perPage: z.coerce.number().int().min(1).max(100).default(20),
   })
@@ -109,7 +110,7 @@ export class NotasFiscaisController {
     const result = await this.listNotas.execute({
       tenantId,
       empresaEmitenteId: query.empresaId,
-      filtros: { status: query.status, clienteId: query.clienteId },
+      filtros: { status: query.status, clienteId: query.clienteId, pedidoId: query.pedidoId },
       page: query.page,
       perPage: query.perPage,
     })

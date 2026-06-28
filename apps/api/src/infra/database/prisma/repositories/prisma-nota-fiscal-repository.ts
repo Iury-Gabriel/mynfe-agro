@@ -29,6 +29,7 @@ function buildWhere(
   }
   if (filtros.status !== undefined) where.status = filtros.status
   if (filtros.clienteId !== undefined) where.clienteId = filtros.clienteId
+  if (filtros.pedidoId !== undefined) where.pedidoId = filtros.pedidoId
   return where
 }
 

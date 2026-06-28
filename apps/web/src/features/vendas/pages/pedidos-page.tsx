@@ -1,4 +1,4 @@
-import { Plus } from 'lucide-react'
+import { Eye, Plus } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 
@@ -26,6 +26,7 @@ import {
   type PedidoTipo,
 } from '@/features/vendas/api/pedidos-api'
 import { ConfirmActionDialog } from '@/features/vendas/components/confirm-action-dialog'
+import { PedidoDetalheDialog } from '@/features/vendas/components/pedido-detalhe-dialog'
 import { VendaFormDialog } from '@/features/vendas/components/venda-form-dialog'
 import { formatCurrency } from '@/features/vendas/lib/format'
 import { hasAnyPermission } from '@/lib/permissions'
@@ -92,6 +93,7 @@ export function PedidosPage(): ReactElement {
   const [statusFilter, setStatusFilter] = useState<PedidoStatus | 'todos'>('todos')
   const [formOpen, setFormOpen] = useState(false)
   const [pending, setPending] = useState<PendingAction | null>(null)
+  const [detalhe, setDetalhe] = useState<Pedido | null>(null)
 
   const filtros: PedidosFiltros =
     statusFilter === 'todos' ? {} : { status: statusFilter }
@@ -152,6 +154,14 @@ export function PedidosPage(): ReactElement {
     fiscal: <StatusPill tone="neutral">—</StatusPill>,
     acoes: (
       <div className="flex justify-end gap-2">
+        <ActionButton
+          variant="ghost"
+          size="sm"
+          aria-label={`Ver detalhes do pedido ${pedido.numero}`}
+          onClick={() => setDetalhe(pedido)}
+        >
+          <Eye />
+        </ActionButton>
         {canConfirm && pedido.status === 'rascunho' && (
           <ActionButton
             variant="subtle"
@@ -272,6 +282,17 @@ export function PedidosPage(): ReactElement {
           showConfirmar
           onSubmit={handleCreate}
           isPending={criar.isPending}
+        />
+      )}
+
+      {detalhe && (
+        <PedidoDetalheDialog
+          open={!!detalhe}
+          onOpenChange={(open) => {
+            if (!open) setDetalhe(null)
+          }}
+          empresaId={empresaId}
+          pedido={detalhe}
         />
       )}
 

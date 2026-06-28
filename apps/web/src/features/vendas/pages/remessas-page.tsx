@@ -1,4 +1,4 @@
-import { Plus } from 'lucide-react'
+import { Eye, Plus } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 
@@ -25,6 +25,7 @@ import {
   type RemessaStatus,
 } from '@/features/vendas/api/remessas-api'
 import { ConfirmActionDialog } from '@/features/vendas/components/confirm-action-dialog'
+import { RemessaDetalheDialog } from '@/features/vendas/components/remessa-detalhe-dialog'
 import { VendaFormDialog } from '@/features/vendas/components/venda-form-dialog'
 import { formatCurrency, formatDate } from '@/features/vendas/lib/format'
 import { hasAnyPermission } from '@/lib/permissions'
@@ -80,6 +81,7 @@ export function RemessasPage(): ReactElement {
   const [statusFilter, setStatusFilter] = useState<RemessaStatus | 'todos'>('todos')
   const [formOpen, setFormOpen] = useState(false)
   const [pending, setPending] = useState<PendingAction | null>(null)
+  const [detalhe, setDetalhe] = useState<Remessa | null>(null)
 
   const filtros: RemessasFiltros = statusFilter === 'todos' ? {} : { status: statusFilter }
 
@@ -139,6 +141,14 @@ export function RemessasPage(): ReactElement {
     ),
     acoes: (
       <div className="flex justify-end gap-2">
+        <ActionButton
+          variant="ghost"
+          size="sm"
+          aria-label={`Ver detalhes da remessa ${remessa.numero}`}
+          onClick={() => setDetalhe(remessa)}
+        >
+          <Eye />
+        </ActionButton>
         {canUpdate && remessa.status === 'aberta' && (
           <ActionButton
             variant="subtle"
@@ -258,6 +268,17 @@ export function RemessasPage(): ReactElement {
           submitLabel="Criar remessa"
           onSubmit={handleCreate}
           isPending={criar.isPending}
+        />
+      )}
+
+      {detalhe && (
+        <RemessaDetalheDialog
+          open={!!detalhe}
+          onOpenChange={(open) => {
+            if (!open) setDetalhe(null)
+          }}
+          empresaId={empresaId}
+          remessa={detalhe}
         />
       )}
 

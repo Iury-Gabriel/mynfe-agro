@@ -52,6 +52,26 @@ describe(ListNotasFiscaisUseCase.name, () => {
     }
   })
 
+  it('filtra por pedidoId', async () => {
+    notaRepo.notas.push(
+      makeNotaFiscal({ id: 'n-1', empresaEmitenteId: 'empresa-1', pedidoId: 'pedido-1' }),
+      makeNotaFiscal({ id: 'n-2', empresaEmitenteId: 'empresa-1', pedidoId: 'pedido-2' }),
+    )
+
+    const result = await sut.execute({
+      tenantId: 'tenant-1',
+      empresaEmitenteId: 'empresa-1',
+      filtros: { pedidoId: 'pedido-1' },
+      page: 1,
+    })
+
+    expect(result.isRight()).toBe(true)
+    if (result.isRight()) {
+      expect(result.value.items).toHaveLength(1)
+      expect(result.value.items[0].id.toString()).toBe('n-1')
+    }
+  })
+
   it('retorna UnexpectedError quando o repositório lança', async () => {
     vi.spyOn(notaRepo, 'count').mockRejectedValueOnce(new Error('boom'))
 

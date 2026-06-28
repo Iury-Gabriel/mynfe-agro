@@ -7,6 +7,7 @@ import { SignInLockoutService } from './sign-in-lockout.service'
 
 import { CacheRepository } from '@/domain/application/cache/cache-repository'
 import { AuthProvider } from '@/domain/application/providers/auth-provider'
+import { TransactionalMailProvider } from '@/domain/application/providers/transactional-mail-provider'
 import { RedisService } from '@/infra/cache/redis/redis.service'
 import { PrismaService } from '@/infra/database/prisma/prisma.service'
 import { EnvService } from '@/infra/env/env.service'
@@ -21,6 +22,7 @@ import { EnvService } from '@/infra/env/env.service'
         env: EnvService,
         redis: RedisService,
         cache: CacheRepository,
+        mailer: TransactionalMailProvider,
       ): AppAuth =>
         createAuth(
           prisma,
@@ -37,8 +39,9 @@ import { EnvService } from '@/infra/env/env.service'
           },
           redis,
           cache,
+          mailer,
         ),
-      inject: [PrismaService, EnvService, RedisService, CacheRepository],
+      inject: [PrismaService, EnvService, RedisService, CacheRepository, TransactionalMailProvider],
     },
     AuthService,
     SignInLockoutService,

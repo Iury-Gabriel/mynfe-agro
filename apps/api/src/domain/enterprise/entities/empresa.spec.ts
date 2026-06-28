@@ -47,6 +47,7 @@ describe(Empresa.name, () => {
       crt: '1',
       ambienteFiscal: 'producao',
       serieNfe: 2,
+      plugnotasConfig: { apiKey: 'k' },
       status: 'ativo',
       endereco: { logradouro: 'Rua A' },
       createdAt: new Date('2024-01-01'),
@@ -66,6 +67,7 @@ describe(Empresa.name, () => {
     expect(sut.crt).toBe('1')
     expect(sut.ambienteFiscal).toBe('producao')
     expect(sut.serieNfe).toBe(2)
+    expect(sut.plugnotasConfig).toEqual({ apiKey: 'k' })
     expect(sut.status).toBe('ativo')
     expect(sut.endereco.logradouro).toBe('Rua A')
     expect(sut.createdAt).toEqual(new Date('2024-01-01'))
@@ -112,6 +114,7 @@ describe(Empresa.name, () => {
     expect(sut.ieProdutorRural).toBeNull()
     expect(sut.serieNfe).toBeNull()
     expect(sut.proximaNumeracaoNfe).toBe(1)
+    expect(sut.plugnotasConfig).toBeNull()
     expect(sut.status).toBe('ativo')
     expect(sut.deletedAt).toBeNull()
     expect(sut.endereco).toEqual({

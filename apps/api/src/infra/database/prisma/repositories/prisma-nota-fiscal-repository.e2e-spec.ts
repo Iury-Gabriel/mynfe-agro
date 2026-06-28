@@ -339,4 +339,28 @@ describe(PrismaNotaFiscalRepository.name, () => {
     const ativas = await sut.findAtivasByPedido(ctx.tenantId, ctx.pedidoId)
     expect(ativas).toHaveLength(2)
   })
+
+  it('findManyByEmpresa/count filtram por pedidoId', async () => {
+    const ctx = await seed()
+    const empresa = makeEmpresaEntity(ctx, ctx.empresaId, 2)
+
+    const nota1 = makeNota(ctx)
+    await sut.criarEmissao({ nota: nota1, empresa })
+
+    const outroPedidoId = await createPedido(prisma, ctx.tenantId, ctx.empresaId, ctx.clienteId)
+    const nota2 = makeNota({ ...ctx, pedidoId: outroPedidoId })
+    await sut.criarEmissao({ nota: nota2, empresa })
+
+    const doPedido = await sut.findManyByEmpresa(
+      ctx.tenantId,
+      ctx.empresaId,
+      { pedidoId: ctx.pedidoId },
+      { page: 1, perPage: 20 },
+    )
+    expect(doPedido).toHaveLength(1)
+    expect(doPedido[0].id.toString()).toBe(nota1.id.toString())
+
+    const total = await sut.count(ctx.tenantId, ctx.empresaId, { pedidoId: outroPedidoId })
+    expect(total).toBe(1)
+  })
 })

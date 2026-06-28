@@ -216,4 +216,29 @@ describe('envSchema', () => {
     expect(sut.PLUGNOTAS_ENABLED).toBe(true)
     expect(sut.PLUGNOTAS_API_KEY).toBe('secret-key')
   })
+
+  it('RESEND desabilitado por padrão com MAIL_FROM default', () => {
+    const sut = envSchema.parse(baseEnv())
+
+    expect(sut.RESEND_ENABLED).toBe(false)
+    expect(sut.RESEND_API_KEY).toBeUndefined()
+    expect(sut.MAIL_FROM).toBe('AgroFlow <no-reply@example.com>')
+  })
+
+  it('rejeita RESEND_ENABLED=true sem RESEND_API_KEY', () => {
+    expect(() => envSchema.parse({ ...baseEnv(), RESEND_ENABLED: 'true' })).toThrow()
+  })
+
+  it('aceita RESEND_ENABLED=true com RESEND_API_KEY e MAIL_FROM customizado', () => {
+    const sut = envSchema.parse({
+      ...baseEnv(),
+      RESEND_ENABLED: 'true',
+      RESEND_API_KEY: 're_secret',
+      MAIL_FROM: 'Custom <custom@example.com>',
+    })
+
+    expect(sut.RESEND_ENABLED).toBe(true)
+    expect(sut.RESEND_API_KEY).toBe('re_secret')
+    expect(sut.MAIL_FROM).toBe('Custom <custom@example.com>')
+  })
 })

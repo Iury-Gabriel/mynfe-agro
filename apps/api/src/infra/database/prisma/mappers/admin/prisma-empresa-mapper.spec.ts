@@ -1,9 +1,8 @@
+import { Prisma, type Empresa as PrismaEmpresa } from '@prisma/client'
 import { makeEmpresa } from '@test/factories'
 import { describe, expect, it } from 'vitest'
 
 import { PrismaEmpresaMapper } from './prisma-empresa-mapper'
-
-import type { Empresa as PrismaEmpresa } from '@prisma/client'
 
 function makePrismaRow(override: Partial<PrismaEmpresa> = {}): PrismaEmpresa {
   return {
@@ -96,6 +95,23 @@ describe('PrismaEmpresaMapper', () => {
       expect(empresa.deletedAt).toEqual(deletedAt)
     })
 
+    it('mapeia plugnotasConfig objeto para Record', () => {
+      const empresa = PrismaEmpresaMapper.toDomain(
+        makePrismaRow({ plugnotasConfig: { apiKey: 'k', cnpj: '1' } }),
+      )
+      expect(empresa.plugnotasConfig).toEqual({ apiKey: 'k', cnpj: '1' })
+    })
+
+    it('mapeia plugnotasConfig null para null', () => {
+      const empresa = PrismaEmpresaMapper.toDomain(makePrismaRow({ plugnotasConfig: null }))
+      expect(empresa.plugnotasConfig).toBeNull()
+    })
+
+    it('mapeia plugnotasConfig não-objeto (array) para null', () => {
+      const empresa = PrismaEmpresaMapper.toDomain(makePrismaRow({ plugnotasConfig: ['a', 'b'] }))
+      expect(empresa.plugnotasConfig).toBeNull()
+    })
+
     it('lança erro quando o CNPJ/CPF persistido é inválido', () => {
       expect(() => PrismaEmpresaMapper.toDomain(makePrismaRow({ cnpjCpf: '00000000000000' }))).toThrow(
         /CNPJ\/CPF persistido inválido/,
@@ -134,6 +150,18 @@ describe('PrismaEmpresaMapper', () => {
       const data = PrismaEmpresaMapper.toPrismaCreate(empresa)
       expect(data.proximaNumeracaoNfe).toBe(7n)
     })
+
+    it('serializa plugnotasConfig presente como objeto', () => {
+      const empresa = makeEmpresa({ plugnotasConfig: { apiKey: 'k' } })
+      const data = PrismaEmpresaMapper.toPrismaCreate(empresa)
+      expect(data.plugnotasConfig).toEqual({ apiKey: 'k' })
+    })
+
+    it('serializa plugnotasConfig null como Prisma.DbNull', () => {
+      const empresa = makeEmpresa({ plugnotasConfig: null })
+      const data = PrismaEmpresaMapper.toPrismaCreate(empresa)
+      expect(data.plugnotasConfig).toBe(Prisma.DbNull)
+    })
   })
 
   describe('toPrismaUpdate', () => {
@@ -158,6 +186,18 @@ describe('PrismaEmpresaMapper', () => {
       const empresa = makeEmpresa({ proximaNumeracaoNfe: 9 })
       const data = PrismaEmpresaMapper.toPrismaUpdate(empresa)
       expect(data.proximaNumeracaoNfe).toBe(9n)
+    })
+
+    it('serializa plugnotasConfig presente como objeto no update', () => {
+      const empresa = makeEmpresa({ plugnotasConfig: { apiKey: 'k' } })
+      const data = PrismaEmpresaMapper.toPrismaUpdate(empresa)
+      expect(data.plugnotasConfig).toEqual({ apiKey: 'k' })
+    })
+
+    it('serializa plugnotasConfig null como Prisma.DbNull no update', () => {
+      const empresa = makeEmpresa({ plugnotasConfig: null })
+      const data = PrismaEmpresaMapper.toPrismaUpdate(empresa)
+      expect(data.plugnotasConfig).toBe(Prisma.DbNull)
     })
   })
 })

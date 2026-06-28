@@ -24,13 +24,25 @@ export interface PermissionsCache {
   set<T>(key: string, value: T, opts: { ttlSeconds: number }): Promise<void>
 }
 
+export interface ResetPasswordMailer {
+  sendPasswordReset(input: {
+    to: string
+    name: string
+    resetUrl: string
+    expiresInMinutes: number
+  }): Promise<void>
+}
+
 export { permissionsCacheKey }
+
+const RESET_PASSWORD_EXPIRES_MINUTES = 60
 
 export function createAuth(
   prisma: PrismaClient,
   env: CreateAuthEnv,
   redis: Redis,
   cache: PermissionsCache,
+  mailer: ResetPasswordMailer,
 ): Auth {
   return betterAuth({
     database: prismaAdapter(prisma, { provider: 'postgresql' }),
@@ -61,6 +73,18 @@ export function createAuth(
       requireEmailVerification: env.MAIL_ENABLED,
       minPasswordLength: 12,
       maxPasswordLength: 128,
+      sendResetPassword: async ({ user, url }) => {
+        try {
+          await mailer.sendPasswordReset({
+            to: user.email,
+            name: user.name,
+            resetUrl: url,
+            expiresInMinutes: RESET_PASSWORD_EXPIRES_MINUTES,
+          })
+        } catch (err) {
+          console.error('[auth.sendResetPassword] falha ao enviar email:', err)
+        }
+      },
     },
 
     session: {

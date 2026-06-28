@@ -68,6 +68,13 @@ export const envSchema = z.object({
     .default('false')
     .transform((s) => s === 'true'),
 
+  RESEND_ENABLED: z
+    .string()
+    .default('false')
+    .transform((s) => s === 'true'),
+  RESEND_API_KEY: z.string().optional(),
+  MAIL_FROM: z.string().default('AgroFlow <no-reply@example.com>'),
+
   WEBHOOK_SECRET: z.string().min(16).optional(),
 
   PLUGNOTAS_ENABLED: z
@@ -115,6 +122,9 @@ export const envSchema = z.object({
   }
   if (data.PLUGNOTAS_ENABLED && !data.PLUGNOTAS_API_KEY) {
     ctx.addIssue({ code: 'custom', path: ['PLUGNOTAS_API_KEY'], message: 'obrigatório quando PLUGNOTAS_ENABLED=true' })
+  }
+  if (data.RESEND_ENABLED && !data.RESEND_API_KEY) {
+    ctx.addIssue({ code: 'custom', path: ['RESEND_API_KEY'], message: 'obrigatório quando RESEND_ENABLED=true' })
   }
 })
 

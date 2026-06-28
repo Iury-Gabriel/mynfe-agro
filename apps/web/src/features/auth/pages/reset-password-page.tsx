@@ -45,7 +45,7 @@ export function ResetPasswordPage(): ReactElement {
 
   if (!token) {
     return (
-      <div className="w-full max-w-sm rounded-lg border border-border bg-card p-6 shadow-sm sm:p-8">
+      <div className="w-full max-w-sm rounded-2xl border border-border/60 bg-card/70 p-6 shadow-xl shadow-black/20 backdrop-blur-sm sm:p-8">
         <div className="space-y-4 text-center">
           <div className="space-y-1">
             <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">Link inválido</h1>
@@ -55,7 +55,7 @@ export function ResetPasswordPage(): ReactElement {
           </div>
           <Link
             to="/forgot-password"
-            className="inline-block text-sm text-muted-foreground underline-offset-4 hover:underline"
+            className="inline-block text-sm text-primary underline-offset-4 hover:underline"
           >
             Solicitar novo link
           </Link>
@@ -72,7 +72,7 @@ export function ResetPasswordPage(): ReactElement {
         : null
 
   return (
-    <div className="w-full max-w-sm rounded-lg border border-border bg-card p-6 shadow-sm sm:p-8">
+    <div className="w-full max-w-sm rounded-2xl border border-border/60 bg-card/70 p-6 shadow-xl shadow-black/20 backdrop-blur-sm sm:p-8">
       <div className="mb-6 space-y-1">
         <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">Redefinir senha</h1>
         <p className="text-sm text-muted-foreground">Escolha uma nova senha para sua conta.</p>
@@ -124,7 +124,7 @@ export function ResetPasswordPage(): ReactElement {
         </Button>
 
         <p className="text-center text-sm text-muted-foreground">
-          <Link to="/sign-in" className="underline-offset-4 hover:underline">
+          <Link to="/sign-in" className="text-primary underline-offset-4 hover:underline">
             Voltar para login
           </Link>
         </p>

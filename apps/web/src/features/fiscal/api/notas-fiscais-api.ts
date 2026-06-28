@@ -71,6 +71,7 @@ export interface ListNotasResponse {
 export interface NotasFiltros {
   status?: NotaFiscalStatus
   clienteId?: string
+  pedidoId?: string
 }
 
 export interface EmitirNotaInput {
@@ -90,6 +91,7 @@ function cleanFiltros(filtros?: NotasFiltros): Record<string, string> {
   if (!filtros) return params
   if (filtros.status) params.status = filtros.status
   if (filtros.clienteId) params.clienteId = filtros.clienteId
+  if (filtros.pedidoId) params.pedidoId = filtros.pedidoId
   return params
 }
 

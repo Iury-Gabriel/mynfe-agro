@@ -40,7 +40,7 @@ function makePedido(overrides: Record<string, unknown> = {}) {
     id: 'pd1',
     tenantId: 't1',
     empresaFaturadoraId: 'Verde Folha',
-    clienteId: 'Quitanda Horta Viva',
+    clienteId: 'cli1',
     numero: 'PED-0042',
     tipo: 'avulso',
     status: 'confirmado',
@@ -50,9 +50,64 @@ function makePedido(overrides: Record<string, unknown> = {}) {
   }
 }
 
-function mockList(pedidos: unknown[]) {
-  vi.mocked(api.get).mockResolvedValue({
-    data: { pedidos, total: pedidos.length, page: 1, perPage: 20, totalPages: 1 },
+function mockApiGet(pedidos: unknown[]) {
+  vi.mocked(api.get).mockImplementation((url: string) => {
+    if (url === '/api/fila-faturamento') {
+      return Promise.resolve({
+        data: { pedidos, total: pedidos.length, page: 1, perPage: 20, totalPages: 1 },
+      })
+    }
+    if (url === '/api/empresas') {
+      return Promise.resolve({
+        data: {
+          empresas: [
+            {
+              id: 'e1',
+              razaoSocial: 'Verde Folha',
+              cnpjCpfFormatado: '12.345.678/0001-90',
+              regimeTributario: 'Simples',
+              ambienteFiscal: 'homologacao',
+              serieNfe: 1,
+            },
+          ],
+        },
+      })
+    }
+    if (url === '/api/clientes') {
+      return Promise.resolve({
+        data: {
+          clientes: [
+            {
+              id: 'cli1',
+              razaoSocialNome: 'Quitanda Horta Viva',
+              cnpjCpfFormatado: '98.765.432/0001-10',
+              municipio: 'Campinas',
+              uf: 'SP',
+            },
+          ],
+        },
+      })
+    }
+    if (url === '/api/produtos') {
+      return Promise.resolve({
+        data: {
+          produtos: [
+            { id: 'p1', descricao: 'Alface Crespa', ncm: '0705.11.00', cfopPadrao: '5101', cstCsosn: '00' },
+          ],
+        },
+      })
+    }
+    // GET /api/pedidos/:id
+    return Promise.resolve({
+      data: {
+        pedido: {
+          id: 'pd1',
+          itens: [
+            { id: 'it1', produtoId: 'p1', loteId: null, quantidade: 120, precoUnitario: 2.8, valorTotal: 336 },
+          ],
+        },
+      },
+    })
   })
 }
 
@@ -65,19 +120,18 @@ describe('FilaFaturamentoPage', () => {
 
   it('exibe gate quando não há empresa ativa', () => {
     activeEmpresaId = null
-    mockList([])
+    mockApiGet([])
     renderWithProviders(<FilaFaturamentoPage />)
     expect(
       screen.getByText('Selecione uma empresa ativa para visualizar os dados.'),
     ).toBeInTheDocument()
   })
 
-  it('lista pedidos aptos com número, cliente e empresa', async () => {
-    mockList([makePedido()])
+  it('lista pedidos aptos com número e empresa', async () => {
+    mockApiGet([makePedido()])
     renderWithProviders(<FilaFaturamentoPage />)
 
     expect(await screen.findByText('PED-0042')).toBeInTheDocument()
-    expect(screen.getByText('Quitanda Horta Viva')).toBeInTheDocument()
     expect(screen.getByText('Verde Folha')).toBeInTheDocument()
   })
 
@@ -87,13 +141,20 @@ describe('FilaFaturamentoPage', () => {
     expect(await screen.findByText('Erro ao carregar a fila.')).toBeInTheDocument()
   })
 
-  it('emite DANFE e mostra o status retornado', async () => {
-    mockList([makePedido()])
-    vi.mocked(api.post).mockResolvedValue({ data: { nota: { id: 'nf1', status: 'autorizada' } } })
+  it('abre revisão e emite DANFE mostrando o status retornado', async () => {
+    mockApiGet([makePedido()])
+    vi.mocked(api.post).mockResolvedValue({
+      data: { nota: { id: 'nf1', status: 'autorizada', numero: '1042', serie: '1', chaveAcesso: 'CHV', protocolo: 'PROTO', ambiente: 'homologacao', dataEmissao: null, mensagemRetorno: null, danfeUrl: null, xmlUrl: null } },
+    })
     const user = userEvent.setup({ delay: null })
     renderWithProviders(<FilaFaturamentoPage />)
 
-    await user.click(await screen.findByRole('button', { name: /Emitir DANFE/ }))
+    await user.click(await screen.findByRole('button', { name: /Revisar DANFE/ }))
+
+    expect(await screen.findByText(/Revisão da DANFE/)).toBeInTheDocument()
+    expect(await screen.findByText('Quitanda Horta Viva')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: /Emitir DANFE/ }))
 
     await waitFor(() => {
       expect(api.post).toHaveBeenCalledWith('/api/notas-fiscais/emitir', {
@@ -102,13 +163,14 @@ describe('FilaFaturamentoPage', () => {
       })
     })
     expect(toastSuccess).toHaveBeenCalledWith('DANFE do pedido PED-0042: Autorizada.')
+    expect(await screen.findByText('CHV')).toBeInTheDocument()
   })
 
-  it('oculta emitir para quem não tem permissão', async () => {
+  it('oculta revisar para quem não tem permissão', async () => {
     useAuthMock.mockReturnValue({ user: { permissions: ['nota:read'] } })
-    mockList([makePedido()])
+    mockApiGet([makePedido()])
     renderWithProviders(<FilaFaturamentoPage />)
     await screen.findByText('PED-0042')
-    expect(screen.queryByRole('button', { name: /Emitir DANFE/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Revisar DANFE/ })).not.toBeInTheDocument()
   })
 })

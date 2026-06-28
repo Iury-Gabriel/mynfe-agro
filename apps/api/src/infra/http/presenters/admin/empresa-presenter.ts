@@ -14,6 +14,8 @@ export interface EmpresaPresenterOutput {
   crt: string
   ambienteFiscal: string
   serieNfe: number | null
+  proximaNumeracaoNfe: number
+  plugnotasConfigurado: boolean
   status: string
   endereco: EmpresaEndereco
   createdAt: Date
@@ -43,6 +45,9 @@ export class EmpresaPresenter {
       crt: empresa.crt,
       ambienteFiscal: empresa.ambienteFiscal,
       serieNfe: empresa.serieNfe,
+      proximaNumeracaoNfe: empresa.proximaNumeracaoNfe,
+      plugnotasConfigurado:
+        empresa.plugnotasConfig !== null && Object.keys(empresa.plugnotasConfig).length > 0,
       status: empresa.status,
       endereco: { ...empresa.endereco },
       createdAt: empresa.createdAt,

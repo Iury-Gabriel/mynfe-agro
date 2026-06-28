@@ -48,6 +48,10 @@ function makeCache() {
   }
 }
 
+function makeMailer() {
+  return { sendPasswordReset: vi.fn().mockResolvedValue(undefined) }
+}
+
 describe('createAuth', () => {
   beforeEach(() => {
     betterAuthMock.mockClear()
@@ -58,7 +62,7 @@ describe('createAuth', () => {
   it('configura o betterAuth com adapter, segredo e cookies seguros', () => {
     const prisma = {} as PrismaClient
 
-    createAuth(prisma, makeEnv(), makeRedis(), makeCache())
+    createAuth(prisma, makeEnv(), makeRedis(), makeCache(), makeMailer())
 
     expect(prismaAdapterMock).toHaveBeenCalledWith(prisma, { provider: 'postgresql' })
     expect(betterAuthMock).toHaveBeenCalledWith(
@@ -78,7 +82,7 @@ describe('createAuth', () => {
   it('não habilita crossSubDomainCookies quando AUTH_COOKIE_DOMAIN é ausente', () => {
     const prisma = {} as PrismaClient
 
-    createAuth(prisma, makeEnv(), makeRedis(), makeCache())
+    createAuth(prisma, makeEnv(), makeRedis(), makeCache(), makeMailer())
 
     const config = betterAuthMock.mock.calls[0][0] as { advanced: Record<string, unknown> }
     expect(config.advanced.crossSubDomainCookies).toBeUndefined()
@@ -87,7 +91,7 @@ describe('createAuth', () => {
   it('habilita crossSubDomainCookies com o domínio quando AUTH_COOKIE_DOMAIN é fornecido', () => {
     const prisma = {} as PrismaClient
 
-    createAuth(prisma, { ...makeEnv(), AUTH_COOKIE_DOMAIN: '.example.com' }, makeRedis(), makeCache())
+    createAuth(prisma, { ...makeEnv(), AUTH_COOKIE_DOMAIN: '.example.com' }, makeRedis(), makeCache(), makeMailer())
 
     const config = betterAuthMock.mock.calls[0][0] as { advanced: Record<string, unknown> }
     expect(config.advanced.crossSubDomainCookies).toEqual({
@@ -111,7 +115,7 @@ describe('createAuth', () => {
     } as unknown as PrismaClient
     const cache = makeCache()
 
-    createAuth(prisma, makeEnv(), makeRedis(), cache)
+    createAuth(prisma, makeEnv(), makeRedis(), cache, makeMailer())
 
     expect(customSessionMock).toHaveBeenCalledOnce()
     const callback = customSessionMock.mock.calls[0][0] as (arg: {
@@ -143,7 +147,7 @@ describe('createAuth', () => {
     const cache = makeCache()
     cache.get.mockResolvedValue(['cached:perm'])
 
-    createAuth(prisma, makeEnv(), makeRedis(), cache)
+    createAuth(prisma, makeEnv(), makeRedis(), cache, makeMailer())
 
     const callback = customSessionMock.mock.calls[0][0] as (arg: {
       user: { id: string }
@@ -169,7 +173,7 @@ describe('createAuth', () => {
       usuarioEmpresa: { findMany: vi.fn().mockResolvedValue([]) },
     } as unknown as PrismaClient
 
-    createAuth(prisma, makeEnv(), makeRedis(), makeCache())
+    createAuth(prisma, makeEnv(), makeRedis(), makeCache(), makeMailer())
 
     const callback = customSessionMock.mock.calls[0][0] as (arg: {
       user: { id: string }
@@ -192,7 +196,7 @@ describe('createAuth', () => {
       usuarioEmpresa: { findMany: vi.fn().mockResolvedValue([]) },
     } as unknown as PrismaClient
 
-    createAuth(prisma, makeEnv(), makeRedis(), makeCache())
+    createAuth(prisma, makeEnv(), makeRedis(), makeCache(), makeMailer())
 
     const callback = customSessionMock.mock.calls[0][0] as (arg: {
       user: { id: string }
@@ -206,7 +210,7 @@ describe('createAuth', () => {
 
   it('secondaryStorage delega ao redis (get, set com e sem ttl, delete)', async () => {
     const redis = makeRedis()
-    createAuth({}, makeEnv(), redis, makeCache())
+    createAuth({}, makeEnv(), redis, makeCache(), makeMailer())
 
     const config = betterAuthMock.mock.calls[0][0] as {
       secondaryStorage: {
@@ -227,5 +231,59 @@ describe('createAuth', () => {
 
     await config.secondaryStorage.delete('k')
     expect(redis.del).toHaveBeenCalledWith('k')
+  })
+
+  it('sendResetPassword delega ao mailer com to, name, resetUrl e expiração', async () => {
+    const mailer = makeMailer()
+    createAuth({}, makeEnv(), makeRedis(), makeCache(), mailer)
+
+    const config = betterAuthMock.mock.calls[0][0] as {
+      emailAndPassword: {
+        sendResetPassword: (arg: {
+          user: { email: string; name: string }
+          url: string
+        }) => Promise<void>
+      }
+    }
+
+    await config.emailAndPassword.sendResetPassword({
+      user: { email: 'ada@example.com', name: 'Ada' },
+      url: 'https://app.example.com/reset?token=abc',
+    })
+
+    expect(mailer.sendPasswordReset).toHaveBeenCalledWith({
+      to: 'ada@example.com',
+      name: 'Ada',
+      resetUrl: 'https://app.example.com/reset?token=abc',
+      expiresInMinutes: 60,
+    })
+  })
+
+  it('sendResetPassword loga e não propaga quando o mailer falha (best-effort)', async () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    const mailer = makeMailer()
+    mailer.sendPasswordReset.mockRejectedValue(new Error('mail down'))
+    createAuth({}, makeEnv(), makeRedis(), makeCache(), mailer)
+
+    const config = betterAuthMock.mock.calls[0][0] as {
+      emailAndPassword: {
+        sendResetPassword: (arg: {
+          user: { email: string; name: string }
+          url: string
+        }) => Promise<void>
+      }
+    }
+
+    await expect(
+      config.emailAndPassword.sendResetPassword({
+        user: { email: 'ada@example.com', name: 'Ada' },
+        url: 'https://app.example.com/reset',
+      }),
+    ).resolves.toBeUndefined()
+    expect(errorSpy).toHaveBeenCalledWith(
+      '[auth.sendResetPassword] falha ao enviar email:',
+      expect.any(Error),
+    )
+    errorSpy.mockRestore()
   })
 })

@@ -11,6 +11,7 @@ describe(EmpresaPresenter.name, () => {
       nomeFantasia: 'Agro',
       cnpjCpf: '11222333000181',
       serieNfe: 2,
+      proximaNumeracaoNfe: 7,
       endereco: { municipio: 'Sinop', uf: 'MT' },
     })
 
@@ -23,6 +24,7 @@ describe(EmpresaPresenter.name, () => {
     expect(sut.cnpjCpf).toBe('11222333000181')
     expect(sut.cnpjCpfFormatado).toBe('11.222.333/0001-81')
     expect(sut.serieNfe).toBe(2)
+    expect(sut.proximaNumeracaoNfe).toBe(7)
     expect(sut.status).toBe('ativo')
     expect(sut.endereco.municipio).toBe('Sinop')
     expect(sut.endereco.uf).toBe('MT')
@@ -58,5 +60,25 @@ describe(EmpresaPresenter.name, () => {
 
     expect(sut.nomeFantasia).toBeNull()
     expect(sut.serieNfe).toBeNull()
+  })
+
+  it('plugnotasConfigurado é false quando não há config', () => {
+    const sut = EmpresaPresenter.toHTTP(makeEmpresa({ plugnotasConfig: null }))
+    expect(sut.plugnotasConfigurado).toBe(false)
+  })
+
+  it('plugnotasConfigurado é false quando a config é um objeto vazio', () => {
+    const sut = EmpresaPresenter.toHTTP(makeEmpresa({ plugnotasConfig: {} }))
+    expect(sut.plugnotasConfigurado).toBe(false)
+  })
+
+  it('plugnotasConfigurado é true quando há credenciais, sem vazar o conteúdo', () => {
+    const sut = EmpresaPresenter.toHTTP(
+      makeEmpresa({ plugnotasConfig: { apiKey: 'secret-123', cnpj: '11222333000181' } }),
+    )
+
+    expect(sut.plugnotasConfigurado).toBe(true)
+    expect(sut).not.toHaveProperty('plugnotasConfig')
+    expect(JSON.stringify(sut)).not.toContain('secret-123')
   })
 })

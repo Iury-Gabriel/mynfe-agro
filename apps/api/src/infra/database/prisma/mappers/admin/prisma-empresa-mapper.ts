@@ -1,4 +1,4 @@
-import type { Prisma, Empresa as PrismaEmpresa } from '@prisma/client'
+import { Prisma, type Empresa as PrismaEmpresa } from '@prisma/client'
 
 import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 import {
@@ -13,6 +13,17 @@ function parseSerieNfe(raw: string | null): number | null {
   if (raw === null) return null
   const parsed = Number.parseInt(raw, 10)
   return Number.isNaN(parsed) ? null : parsed
+}
+
+function parsePlugnotasConfig(raw: Prisma.JsonValue | null): Record<string, unknown> | null {
+  if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) return null
+  return raw
+}
+
+function toPrismaJson(
+  value: Record<string, unknown> | null,
+): Prisma.InputJsonValue | typeof Prisma.DbNull {
+  return value === null ? Prisma.DbNull : (value as Prisma.InputJsonValue)
 }
 
 export class PrismaEmpresaMapper {
@@ -36,6 +47,7 @@ export class PrismaEmpresaMapper {
         ambienteFiscal: raw.ambienteFiscal as AmbienteFiscal,
         serieNfe: parseSerieNfe(raw.serieNfe),
         proximaNumeracaoNfe: Number(raw.proximaNumeracaoNfe),
+        plugnotasConfig: parsePlugnotasConfig(raw.plugnotasConfig),
         status: raw.status as EmpresaStatus,
         endereco: {
           logradouro: raw.enderecoLogradouro,
@@ -69,6 +81,7 @@ export class PrismaEmpresaMapper {
       ambienteFiscal: empresa.ambienteFiscal,
       serieNfe: empresa.serieNfe === null ? null : String(empresa.serieNfe),
       proximaNumeracaoNfe: BigInt(empresa.proximaNumeracaoNfe),
+      plugnotasConfig: toPrismaJson(empresa.plugnotasConfig),
       status: empresa.status,
       enderecoLogradouro: empresa.endereco.logradouro,
       enderecoNumero: empresa.endereco.numero,
@@ -96,6 +109,7 @@ export class PrismaEmpresaMapper {
       ambienteFiscal: empresa.ambienteFiscal,
       serieNfe: empresa.serieNfe === null ? null : String(empresa.serieNfe),
       proximaNumeracaoNfe: BigInt(empresa.proximaNumeracaoNfe),
+      plugnotasConfig: toPrismaJson(empresa.plugnotasConfig),
       status: empresa.status,
       enderecoLogradouro: empresa.endereco.logradouro,
       enderecoNumero: empresa.endereco.numero,
