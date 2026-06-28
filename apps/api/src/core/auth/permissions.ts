@@ -37,6 +37,12 @@ export const PERMISSIONS = [
   'custo:read',
   'custo:create',
   'custo:delete',
+  'colheita:read',
+  'colheita:create',
+  'lote:read',
+  'estoque:read',
+  'estoque:ajuste',
+  'embalagem:create',
 ] as const
 
 export type Permission = (typeof PERMISSIONS)[number]
@@ -91,6 +97,12 @@ export const ROLE_PERMISSIONS = {
     'custo:read',
     'custo:create',
     'custo:delete',
+    'colheita:read',
+    'colheita:create',
+    'lote:read',
+    'estoque:read',
+    'estoque:ajuste',
+    'embalagem:create',
   ],
   'Operador de Campo': [
     'view:dashboard',
@@ -108,6 +120,12 @@ export const ROLE_PERMISSIONS = {
     'custo:read',
     'custo:create',
     'custo:delete',
+    'colheita:read',
+    'colheita:create',
+    'lote:read',
+    'estoque:read',
+    'estoque:ajuste',
+    'embalagem:create',
   ],
   Vendedor: [
     'view:dashboard',
@@ -119,8 +137,17 @@ export const ROLE_PERMISSIONS = {
     'preco:read',
     'preco:create',
     'preco:delete',
+    'lote:read',
+    'estoque:read',
   ],
-  Faturista: ['view:dashboard', 'empresa:read', 'cliente:read', 'produto:read'],
+  Faturista: [
+    'view:dashboard',
+    'empresa:read',
+    'cliente:read',
+    'produto:read',
+    'lote:read',
+    'estoque:read',
+  ],
 } as const satisfies Record<RoleName, readonly Permission[]>
 
 export function hasAnyPermission(

@@ -4,9 +4,14 @@ import { PrismaService } from './prisma/prisma.service'
 import { PrismaAreaRepository } from './prisma/repositories/prisma-area-repository'
 import { PrismaAtividadeCampoRepository } from './prisma/repositories/prisma-atividade-campo-repository'
 import { PrismaClienteRepository } from './prisma/repositories/prisma-cliente-repository'
+import { PrismaColheitaRepository } from './prisma/repositories/prisma-colheita-repository'
 import { PrismaCustoProducaoRepository } from './prisma/repositories/prisma-custo-producao-repository'
 import { PrismaEmpresaRepository } from './prisma/repositories/prisma-empresa-repository'
+import { PrismaEstoqueMovimentoRepository } from './prisma/repositories/prisma-estoque-movimento-repository'
+import { PrismaEstoqueSaldoRepository } from './prisma/repositories/prisma-estoque-saldo-repository'
+import { PrismaEstoqueWriteRepository } from './prisma/repositories/prisma-estoque-write-repository'
 import { PrismaFazendaRepository } from './prisma/repositories/prisma-fazenda-repository'
+import { PrismaLoteRepository } from './prisma/repositories/prisma-lote-repository'
 import { PrismaProdutoRepository } from './prisma/repositories/prisma-produto-repository'
 import { PrismaRoleRepository } from './prisma/repositories/prisma-role-repository'
 import { PrismaSafraRepository } from './prisma/repositories/prisma-safra-repository'
@@ -18,9 +23,14 @@ import { PrismaUserRoleAssignmentRepository } from './prisma/repositories/prisma
 import { AreaRepository } from '@/domain/application/repositories/area-repository'
 import { AtividadeCampoRepository } from '@/domain/application/repositories/atividade-campo-repository'
 import { ClienteRepository } from '@/domain/application/repositories/cliente-repository'
+import { ColheitaRepository } from '@/domain/application/repositories/colheita-repository'
 import { CustoProducaoRepository } from '@/domain/application/repositories/custo-producao-repository'
 import { EmpresaRepository } from '@/domain/application/repositories/empresa-repository'
+import { EstoqueMovimentoRepository } from '@/domain/application/repositories/estoque-movimento-repository'
+import { EstoqueSaldoRepository } from '@/domain/application/repositories/estoque-saldo-repository'
+import { EstoqueWriteRepository } from '@/domain/application/repositories/estoque-write-repository'
 import { FazendaRepository } from '@/domain/application/repositories/fazenda-repository'
+import { LoteRepository } from '@/domain/application/repositories/lote-repository'
 import { ProdutoRepository } from '@/domain/application/repositories/produto-repository'
 import { RoleRepository } from '@/domain/application/repositories/role-repository'
 import { SafraRepository } from '@/domain/application/repositories/safra-repository'
@@ -46,6 +56,11 @@ import { UserRoleAssignmentRepository } from '@/domain/application/repositories/
     { provide: SafraRepository, useClass: PrismaSafraRepository },
     { provide: AtividadeCampoRepository, useClass: PrismaAtividadeCampoRepository },
     { provide: CustoProducaoRepository, useClass: PrismaCustoProducaoRepository },
+    { provide: ColheitaRepository, useClass: PrismaColheitaRepository },
+    { provide: LoteRepository, useClass: PrismaLoteRepository },
+    { provide: EstoqueMovimentoRepository, useClass: PrismaEstoqueMovimentoRepository },
+    { provide: EstoqueSaldoRepository, useClass: PrismaEstoqueSaldoRepository },
+    { provide: EstoqueWriteRepository, useClass: PrismaEstoqueWriteRepository },
   ],
   exports: [
     PrismaService,
@@ -62,6 +77,11 @@ import { UserRoleAssignmentRepository } from '@/domain/application/repositories/
     SafraRepository,
     AtividadeCampoRepository,
     CustoProducaoRepository,
+    ColheitaRepository,
+    LoteRepository,
+    EstoqueMovimentoRepository,
+    EstoqueSaldoRepository,
+    EstoqueWriteRepository,
   ],
 })
 export class DatabaseModule {}

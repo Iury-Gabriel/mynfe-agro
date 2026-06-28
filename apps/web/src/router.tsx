@@ -200,6 +200,26 @@ export const router = createBrowserRouter([
         loader: () => requirePermission('custo:read'),
       },
       {
+        path: 'estoque',
+        lazy: () =>
+          import('@/features/estoque/pages/estoque-page').then((m) => ({ Component: m.EstoquePage })),
+        loader: () => requirePermission('estoque:read'),
+      },
+      {
+        path: 'lotes',
+        lazy: () =>
+          import('@/features/estoque/pages/lotes-page').then((m) => ({ Component: m.LotesPage })),
+        loader: () => requirePermission('lote:read'),
+      },
+      {
+        path: 'colheitas',
+        lazy: () =>
+          import('@/features/estoque/pages/colheitas-page').then((m) => ({
+            Component: m.ColheitasPage,
+          })),
+        loader: () => requirePermission('colheita:read'),
+      },
+      {
         path: 'admin/roles',
         lazy: () =>
           import('@/features/admin/pages/roles-page').then((m) => ({ Component: m.RolesPage })),

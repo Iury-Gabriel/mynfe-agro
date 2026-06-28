@@ -45,10 +45,28 @@ describe('PERMISSIONS', () => {
     expect(PERMISSIONS).toContain('custo:delete')
   })
 
-  it('tem exatamente 38 permissões', () => {
-    expect(PERMISSIONS).toHaveLength(38)
+  it('contém as permissões de estoque, lotes & colheita', () => {
+    expect(PERMISSIONS).toContain('colheita:read')
+    expect(PERMISSIONS).toContain('colheita:create')
+    expect(PERMISSIONS).toContain('lote:read')
+    expect(PERMISSIONS).toContain('estoque:read')
+    expect(PERMISSIONS).toContain('estoque:ajuste')
+    expect(PERMISSIONS).toContain('embalagem:create')
+  })
+
+  it('tem exatamente 44 permissões', () => {
+    expect(PERMISSIONS).toHaveLength(44)
   })
 })
+
+const ESTOQUE_PERMISSIONS = [
+  'colheita:read',
+  'colheita:create',
+  'lote:read',
+  'estoque:read',
+  'estoque:ajuste',
+  'embalagem:create',
+] as const
 
 describe('ROLE_PERMISSIONS', () => {
   it('define os 5 papéis canônicos', () => {
@@ -110,6 +128,28 @@ describe('ROLE_PERMISSIONS', () => {
       'custo:delete',
     ] as const) {
       expect(ROLE_PERMISSIONS['Operador de Campo']).toContain(p)
+    }
+  })
+
+  it('Gestor recebe todas as permissões de estoque, lotes & colheita', () => {
+    for (const p of ESTOQUE_PERMISSIONS) {
+      expect(ROLE_PERMISSIONS.Gestor).toContain(p)
+    }
+  })
+
+  it('Operador de Campo recebe todas as permissões de estoque, lotes & colheita', () => {
+    for (const p of ESTOQUE_PERMISSIONS) {
+      expect(ROLE_PERMISSIONS['Operador de Campo']).toContain(p)
+    }
+  })
+
+  it('Vendedor e Faturista têm apenas consulta de lote e estoque', () => {
+    for (const role of ['Vendedor', 'Faturista'] as const) {
+      expect(ROLE_PERMISSIONS[role]).toContain('lote:read')
+      expect(ROLE_PERMISSIONS[role]).toContain('estoque:read')
+      expect(ROLE_PERMISSIONS[role]).not.toContain('estoque:ajuste')
+      expect(ROLE_PERMISSIONS[role]).not.toContain('colheita:create')
+      expect(ROLE_PERMISSIONS[role]).not.toContain('embalagem:create')
     }
   })
 

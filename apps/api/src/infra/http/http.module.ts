@@ -5,9 +5,13 @@ import { ThrottlerStorageRedisService } from 'nestjs-throttler-storage-redis'
 
 import { AreasController } from './controllers/admin/areas.controller'
 import { AtividadesCampoController } from './controllers/admin/atividades-campo.controller'
+import { ColheitasController } from './controllers/admin/colheitas.controller'
 import { CustosProducaoController } from './controllers/admin/custos-producao.controller'
+import { EmbalagensController } from './controllers/admin/embalagens.controller'
 import { EmpresasController } from './controllers/admin/empresas.controller'
+import { EstoqueController } from './controllers/admin/estoque.controller'
 import { FazendasController } from './controllers/admin/fazendas.controller'
+import { LotesController } from './controllers/admin/lotes.controller'
 import { ProdutosController } from './controllers/admin/produtos.controller'
 import { RolesController } from './controllers/admin/roles.controller'
 import { SafrasController } from './controllers/admin/safras.controller'
@@ -41,6 +45,14 @@ import { CreateEmpresaUseCase } from '@/domain/application/use-cases/empresas/cr
 import { DeactivateEmpresaUseCase } from '@/domain/application/use-cases/empresas/deactivate-empresa-use-case'
 import { ListEmpresasUseCase } from '@/domain/application/use-cases/empresas/list-empresas-use-case'
 import { UpdateEmpresaUseCase } from '@/domain/application/use-cases/empresas/update-empresa-use-case'
+import { AjustarEstoqueUseCase } from '@/domain/application/use-cases/estoque/ajustar-estoque-use-case'
+import { GetLoteRastreabilidadeUseCase } from '@/domain/application/use-cases/estoque/get-lote-rastreabilidade-use-case'
+import { GetPosicaoEstoqueUseCase } from '@/domain/application/use-cases/estoque/get-posicao-estoque-use-case'
+import { ListColheitasUseCase } from '@/domain/application/use-cases/estoque/list-colheitas-use-case'
+import { ListLotesUseCase } from '@/domain/application/use-cases/estoque/list-lotes-use-case'
+import { ListMovimentacoesUseCase } from '@/domain/application/use-cases/estoque/list-movimentacoes-use-case'
+import { RegistrarColheitaUseCase } from '@/domain/application/use-cases/estoque/registrar-colheita-use-case'
+import { RegistrarEmbalagemUseCase } from '@/domain/application/use-cases/estoque/registrar-embalagem-use-case'
 import { CreateFazendaUseCase } from '@/domain/application/use-cases/fazendas/create-fazenda-use-case'
 import { DeleteFazendaUseCase } from '@/domain/application/use-cases/fazendas/delete-fazenda-use-case'
 import { ListFazendasUseCase } from '@/domain/application/use-cases/fazendas/list-fazendas-use-case'
@@ -110,6 +122,10 @@ import { EnvService } from '@/infra/env/env.service'
     SafrasController,
     AtividadesCampoController,
     CustosProducaoController,
+    ColheitasController,
+    EmbalagensController,
+    LotesController,
+    EstoqueController,
   ],
   providers: [
     // Ordem dos APP_GUARD importa: Throttler → Auth → Permission → EmpresaAccess.
@@ -153,6 +169,14 @@ import { EnvService } from '@/infra/env/env.service'
     ListCustosProducaoUseCase,
     CreateCustoProducaoUseCase,
     DeleteCustoProducaoUseCase,
+    ListColheitasUseCase,
+    RegistrarColheitaUseCase,
+    RegistrarEmbalagemUseCase,
+    ListLotesUseCase,
+    GetLoteRastreabilidadeUseCase,
+    GetPosicaoEstoqueUseCase,
+    ListMovimentacoesUseCase,
+    AjustarEstoqueUseCase,
     CreateRoleUseCase,
     UpdateRoleUseCase,
     DeleteRoleUseCase,
