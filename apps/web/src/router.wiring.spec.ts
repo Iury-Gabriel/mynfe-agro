@@ -60,6 +60,9 @@ describe('router wiring', () => {
           'cliente:read',
           'produto:read',
           'preco:read',
+          'safra:read',
+          'atividade:read',
+          'custo:read',
         ],
       },
     })

@@ -32,8 +32,21 @@ describe('PERMISSIONS', () => {
     expect(PERMISSIONS).toContain('preco:create')
   })
 
-  it('tem exatamente 28 permissões', () => {
-    expect(PERMISSIONS).toHaveLength(28)
+  it('contém as permissões de cultivo & safra', () => {
+    expect(PERMISSIONS).toContain('safra:read')
+    expect(PERMISSIONS).toContain('safra:create')
+    expect(PERMISSIONS).toContain('safra:update')
+    expect(PERMISSIONS).toContain('safra:delete')
+    expect(PERMISSIONS).toContain('atividade:read')
+    expect(PERMISSIONS).toContain('atividade:create')
+    expect(PERMISSIONS).toContain('atividade:delete')
+    expect(PERMISSIONS).toContain('custo:read')
+    expect(PERMISSIONS).toContain('custo:create')
+    expect(PERMISSIONS).toContain('custo:delete')
+  })
+
+  it('tem exatamente 38 permissões', () => {
+    expect(PERMISSIONS).toHaveLength(38)
   })
 })
 
@@ -63,6 +76,48 @@ describe('ROLE_PERMISSIONS', () => {
       expect(ROLE_PERMISSIONS[role]).toContain('empresa:read')
       expect(ROLE_PERMISSIONS[role]).not.toContain('empresa:create')
       expect(ROLE_PERMISSIONS[role]).not.toContain('empresa:status')
+    }
+  })
+
+  it('Gestor recebe todas as permissões de cultivo & safra', () => {
+    for (const p of [
+      'safra:read',
+      'safra:create',
+      'safra:update',
+      'safra:delete',
+      'atividade:read',
+      'atividade:create',
+      'atividade:delete',
+      'custo:read',
+      'custo:create',
+      'custo:delete',
+    ] as const) {
+      expect(ROLE_PERMISSIONS.Gestor).toContain(p)
+    }
+  })
+
+  it('Operador de Campo recebe todas as permissões de cultivo & safra', () => {
+    for (const p of [
+      'safra:read',
+      'safra:create',
+      'safra:update',
+      'safra:delete',
+      'atividade:read',
+      'atividade:create',
+      'atividade:delete',
+      'custo:read',
+      'custo:create',
+      'custo:delete',
+    ] as const) {
+      expect(ROLE_PERMISSIONS['Operador de Campo']).toContain(p)
+    }
+  })
+
+  it('Vendedor e Faturista não recebem permissões de cultivo & safra', () => {
+    for (const role of ['Vendedor', 'Faturista'] as const) {
+      for (const p of ['safra:read', 'atividade:read', 'custo:read'] as const) {
+        expect(ROLE_PERMISSIONS[role]).not.toContain(p)
+      }
     }
   })
 

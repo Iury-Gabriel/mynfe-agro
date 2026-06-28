@@ -4,10 +4,13 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler'
 import { ThrottlerStorageRedisService } from 'nestjs-throttler-storage-redis'
 
 import { AreasController } from './controllers/admin/areas.controller'
+import { AtividadesCampoController } from './controllers/admin/atividades-campo.controller'
+import { CustosProducaoController } from './controllers/admin/custos-producao.controller'
 import { EmpresasController } from './controllers/admin/empresas.controller'
 import { FazendasController } from './controllers/admin/fazendas.controller'
 import { ProdutosController } from './controllers/admin/produtos.controller'
 import { RolesController } from './controllers/admin/roles.controller'
+import { SafrasController } from './controllers/admin/safras.controller'
 import { TabelaPrecosController } from './controllers/admin/tabela-precos.controller'
 import { UsersController } from './controllers/admin/users.controller'
 import { ClientesController } from './controllers/cliente/clientes.controller'
@@ -23,10 +26,16 @@ import { CreateAreaUseCase } from '@/domain/application/use-cases/areas/create-a
 import { DeleteAreaUseCase } from '@/domain/application/use-cases/areas/delete-area-use-case'
 import { ListAreasUseCase } from '@/domain/application/use-cases/areas/list-areas-use-case'
 import { UpdateAreaUseCase } from '@/domain/application/use-cases/areas/update-area-use-case'
+import { CreateAtividadeCampoUseCase } from '@/domain/application/use-cases/atividades-campo/create-atividade-campo-use-case'
+import { DeleteAtividadeCampoUseCase } from '@/domain/application/use-cases/atividades-campo/delete-atividade-campo-use-case'
+import { ListAtividadesCampoUseCase } from '@/domain/application/use-cases/atividades-campo/list-atividades-campo-use-case'
 import { CreateClienteUseCase } from '@/domain/application/use-cases/clientes/create-cliente-use-case'
 import { DeleteClienteUseCase } from '@/domain/application/use-cases/clientes/delete-cliente-use-case'
 import { ListClientesUseCase } from '@/domain/application/use-cases/clientes/list-clientes-use-case'
 import { UpdateClienteUseCase } from '@/domain/application/use-cases/clientes/update-cliente-use-case'
+import { CreateCustoProducaoUseCase } from '@/domain/application/use-cases/custos-producao/create-custo-producao-use-case'
+import { DeleteCustoProducaoUseCase } from '@/domain/application/use-cases/custos-producao/delete-custo-producao-use-case'
+import { ListCustosProducaoUseCase } from '@/domain/application/use-cases/custos-producao/list-custos-producao-use-case'
 import { ActivateEmpresaUseCase } from '@/domain/application/use-cases/empresas/activate-empresa-use-case'
 import { CreateEmpresaUseCase } from '@/domain/application/use-cases/empresas/create-empresa-use-case'
 import { DeactivateEmpresaUseCase } from '@/domain/application/use-cases/empresas/deactivate-empresa-use-case'
@@ -48,6 +57,10 @@ import { CreateRoleUseCase } from '@/domain/application/use-cases/roles/create-r
 import { DeleteRoleUseCase } from '@/domain/application/use-cases/roles/delete-role-use-case'
 import { ListRolesUseCase } from '@/domain/application/use-cases/roles/list-roles-use-case'
 import { UpdateRoleUseCase } from '@/domain/application/use-cases/roles/update-role-use-case'
+import { CreateSafraUseCase } from '@/domain/application/use-cases/safras/create-safra-use-case'
+import { DeleteSafraUseCase } from '@/domain/application/use-cases/safras/delete-safra-use-case'
+import { ListSafrasUseCase } from '@/domain/application/use-cases/safras/list-safras-use-case'
+import { UpdateSafraUseCase } from '@/domain/application/use-cases/safras/update-safra-use-case'
 import { CreateAdminUserUseCase } from '@/domain/application/use-cases/users/create-admin-user-use-case'
 import { DeactivateUserUseCase } from '@/domain/application/use-cases/users/deactivate-user-use-case'
 import { DeleteUserUseCase } from '@/domain/application/use-cases/users/delete-user-use-case'
@@ -94,6 +107,9 @@ import { EnvService } from '@/infra/env/env.service'
     ClientesController,
     ProdutosController,
     TabelaPrecosController,
+    SafrasController,
+    AtividadesCampoController,
+    CustosProducaoController,
   ],
   providers: [
     // Ordem dos APP_GUARD importa: Throttler → Auth → Permission → EmpresaAccess.
@@ -127,6 +143,16 @@ import { EnvService } from '@/infra/env/env.service'
     ListTabelaPrecosUseCase,
     CreateTabelaPrecoUseCase,
     DeleteTabelaPrecoUseCase,
+    ListSafrasUseCase,
+    CreateSafraUseCase,
+    UpdateSafraUseCase,
+    DeleteSafraUseCase,
+    ListAtividadesCampoUseCase,
+    CreateAtividadeCampoUseCase,
+    DeleteAtividadeCampoUseCase,
+    ListCustosProducaoUseCase,
+    CreateCustoProducaoUseCase,
+    DeleteCustoProducaoUseCase,
     CreateRoleUseCase,
     UpdateRoleUseCase,
     DeleteRoleUseCase,

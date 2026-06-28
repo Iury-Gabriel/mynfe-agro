@@ -178,6 +178,28 @@ export const router = createBrowserRouter([
         loader: () => requirePermission('preco:read'),
       },
       {
+        path: 'safras',
+        lazy: () =>
+          import('@/features/admin/pages/safras-page').then((m) => ({ Component: m.SafrasPage })),
+        loader: () => requirePermission('safra:read'),
+      },
+      {
+        path: 'atividades-campo',
+        lazy: () =>
+          import('@/features/admin/pages/atividades-campo-page').then((m) => ({
+            Component: m.AtividadesCampoPage,
+          })),
+        loader: () => requirePermission('atividade:read'),
+      },
+      {
+        path: 'custos-producao',
+        lazy: () =>
+          import('@/features/admin/pages/custos-producao-page').then((m) => ({
+            Component: m.CustosProducaoPage,
+          })),
+        loader: () => requirePermission('custo:read'),
+      },
+      {
         path: 'admin/roles',
         lazy: () =>
           import('@/features/admin/pages/roles-page').then((m) => ({ Component: m.RolesPage })),
