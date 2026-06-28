@@ -16,6 +16,7 @@ import { PrismaFazendaRepository } from './prisma/repositories/prisma-fazenda-re
 import { PrismaLoteRepository } from './prisma/repositories/prisma-lote-repository'
 import { PrismaNotaFiscalRepository } from './prisma/repositories/prisma-nota-fiscal-repository'
 import { PrismaPedidoRepository } from './prisma/repositories/prisma-pedido-repository'
+import { PrismaProdutoFichaTecnicaRepository } from './prisma/repositories/prisma-produto-ficha-tecnica-repository'
 import { PrismaProdutoRepository } from './prisma/repositories/prisma-produto-repository'
 import { PrismaRemessaRepository } from './prisma/repositories/prisma-remessa-repository'
 import { PrismaRoleRepository } from './prisma/repositories/prisma-role-repository'
@@ -41,6 +42,7 @@ import { FazendaRepository } from '@/domain/application/repositories/fazenda-rep
 import { LoteRepository } from '@/domain/application/repositories/lote-repository'
 import { NotaFiscalRepository } from '@/domain/application/repositories/nota-fiscal-repository'
 import { PedidoRepository } from '@/domain/application/repositories/pedido-repository'
+import { ProdutoFichaTecnicaRepository } from '@/domain/application/repositories/produto-ficha-tecnica-repository'
 import { ProdutoRepository } from '@/domain/application/repositories/produto-repository'
 import { RemessaRepository } from '@/domain/application/repositories/remessa-repository'
 import { RoleRepository } from '@/domain/application/repositories/role-repository'
@@ -64,6 +66,10 @@ import { VendaWriteRepository } from '@/domain/application/repositories/venda-wr
     { provide: AreaRepository, useClass: PrismaAreaRepository },
     { provide: ClienteRepository, useClass: PrismaClienteRepository },
     { provide: ProdutoRepository, useClass: PrismaProdutoRepository },
+    {
+      provide: ProdutoFichaTecnicaRepository,
+      useClass: PrismaProdutoFichaTecnicaRepository,
+    },
     { provide: TabelaPrecoClienteRepository, useClass: PrismaTabelaPrecoClienteRepository },
     { provide: SafraRepository, useClass: PrismaSafraRepository },
     { provide: AtividadeCampoRepository, useClass: PrismaAtividadeCampoRepository },
@@ -91,6 +97,7 @@ import { VendaWriteRepository } from '@/domain/application/repositories/venda-wr
     AreaRepository,
     ClienteRepository,
     ProdutoRepository,
+    ProdutoFichaTecnicaRepository,
     TabelaPrecoClienteRepository,
     SafraRepository,
     AtividadeCampoRepository,

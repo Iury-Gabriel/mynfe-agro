@@ -5,6 +5,7 @@ import type { Fazenda } from '@/domain/enterprise/entities/fazenda'
 import { left, right, type Either } from '@/core/either'
 import { UnexpectedError } from '@/core/errors/unexpected-error'
 import { FazendaRepository } from '@/domain/application/repositories/fazenda-repository'
+import { RegistrarAuditoriaUseCase } from '@/domain/application/use-cases/auditoria/registrar-auditoria-use-case'
 import { FazendaNotFoundError } from '@/domain/application/use-cases/errors/fazenda-not-found-error'
 
 export interface UpdateFazendaInput {
@@ -32,11 +33,16 @@ type UpdateFazendaResult = Either<FazendaNotFoundError | UnexpectedError, Update
 
 @Injectable()
 export class UpdateFazendaUseCase {
-  constructor(private readonly fazendas: FazendaRepository) {}
+  constructor(
+    private readonly fazendas: FazendaRepository,
+    private readonly registrarAuditoria: RegistrarAuditoriaUseCase,
+  ) {}
 
   async execute(input: UpdateFazendaInput): Promise<UpdateFazendaResult> {
     const fazenda = await this.fazendas.findById(input.fazendaId, input.tenantId)
     if (!fazenda) return left(new FazendaNotFoundError())
+
+    const dadosAntes = { nome: fazenda.nome }
 
     fazenda.updateCadastro({
       nome: input.nome,
@@ -59,6 +65,15 @@ export class UpdateFazendaUseCase {
       console.error('[UpdateFazendaUseCase] unexpected error:', err)
       return left(new UnexpectedError(err))
     }
+
+    await this.registrarAuditoria.execute({
+      tenantId: input.tenantId,
+      entidade: 'fazenda',
+      entidadeId: fazenda.id.toString(),
+      acao: 'editar',
+      dadosAntes,
+      dadosDepois: { nome: fazenda.nome },
+    })
 
     return right({ fazenda })
   }

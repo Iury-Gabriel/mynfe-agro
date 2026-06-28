@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common'
 import { left, right, type Either } from '@/core/either'
 import { UnexpectedError } from '@/core/errors/unexpected-error'
 import { ProdutoRepository } from '@/domain/application/repositories/produto-repository'
+import { RegistrarAuditoriaUseCase } from '@/domain/application/use-cases/auditoria/registrar-auditoria-use-case'
 import { Produto, type ProdutoTipo } from '@/domain/enterprise/entities/produto'
 
 export interface CreateProdutoInput {
@@ -28,7 +29,10 @@ type CreateProdutoResult = Either<UnexpectedError, CreateProdutoOutput>
 
 @Injectable()
 export class CreateProdutoUseCase {
-  constructor(private readonly produtos: ProdutoRepository) {}
+  constructor(
+    private readonly produtos: ProdutoRepository,
+    private readonly registrarAuditoria: RegistrarAuditoriaUseCase,
+  ) {}
 
   async execute(input: CreateProdutoInput): Promise<CreateProdutoResult> {
     try {
@@ -50,6 +54,14 @@ export class CreateProdutoUseCase {
       })
 
       await this.produtos.create(produto)
+
+      await this.registrarAuditoria.execute({
+        tenantId: input.tenantId,
+        entidade: 'produto',
+        entidadeId: produto.id.toString(),
+        acao: 'criar',
+        dadosDepois: { descricao: produto.descricao, status: produto.status },
+      })
 
       return right({ produto })
     } catch (err) {

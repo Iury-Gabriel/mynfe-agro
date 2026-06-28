@@ -6,6 +6,7 @@ import { makePedido } from '@test/factories/make-pedido'
 import { makePedidoItem } from '@test/factories/make-pedido-item'
 import { makeProduto } from '@test/factories/make-produto'
 import { FakeFiscalProvider } from '@test/providers/fake-fiscal-provider'
+import { InMemoryAuditoriaLogRepository } from '@test/repositories/in-memory-auditoria-log-repository'
 import { InMemoryEmpresaRepository } from '@test/repositories/in-memory-empresa-repository'
 import { InMemoryNotaFiscalRepository } from '@test/repositories/in-memory-nota-fiscal-repository'
 import { InMemoryPedidoRepository } from '@test/repositories/in-memory-pedido-repository'
@@ -18,10 +19,12 @@ import { NotasFiscaisController } from './notas-fiscais.controller'
 import type { CanActivate, ExecutionContext, INestApplication } from '@nestjs/common'
 
 import { FiscalProvider } from '@/domain/application/ports/fiscal-provider'
+import { AuditoriaLogRepository } from '@/domain/application/repositories/auditoria-log-repository'
 import { EmpresaRepository } from '@/domain/application/repositories/empresa-repository'
 import { NotaFiscalRepository } from '@/domain/application/repositories/nota-fiscal-repository'
 import { PedidoRepository } from '@/domain/application/repositories/pedido-repository'
 import { ProdutoRepository } from '@/domain/application/repositories/produto-repository'
+import { RegistrarAuditoriaUseCase } from '@/domain/application/use-cases/auditoria/registrar-auditoria-use-case'
 import { CancelarNotaFiscalUseCase } from '@/domain/application/use-cases/faturamento/cancelar-nota-fiscal-use-case'
 import { EmitirNotaFiscalUseCase } from '@/domain/application/use-cases/faturamento/emitir-nota-fiscal-use-case'
 import { GetNotaFiscalUseCase } from '@/domain/application/use-cases/faturamento/get-nota-fiscal-use-case'
@@ -72,6 +75,8 @@ describe(NotasFiscaisController.name, () => {
         { provide: PedidoRepository, useValue: pedidos },
         { provide: ProdutoRepository, useValue: produtos },
         { provide: FiscalProvider, useValue: fiscalProvider },
+        { provide: AuditoriaLogRepository, useClass: InMemoryAuditoriaLogRepository },
+        RegistrarAuditoriaUseCase,
         EmitirNotaFiscalUseCase,
         ListNotasFiscaisUseCase,
         GetNotaFiscalUseCase,

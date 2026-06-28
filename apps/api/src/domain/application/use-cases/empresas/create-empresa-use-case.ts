@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common'
 import { left, right, type Either } from '@/core/either'
 import { UnexpectedError } from '@/core/errors/unexpected-error'
 import { EmpresaRepository } from '@/domain/application/repositories/empresa-repository'
+import { RegistrarAuditoriaUseCase } from '@/domain/application/use-cases/auditoria/registrar-auditoria-use-case'
 import { InvalidCnpjCpfError } from '@/domain/application/use-cases/errors/invalid-cnpj-cpf-error'
 import {
   Empresa,
@@ -35,7 +36,10 @@ type CreateEmpresaResult = Either<InvalidCnpjCpfError | UnexpectedError, CreateE
 
 @Injectable()
 export class CreateEmpresaUseCase {
-  constructor(private readonly empresas: EmpresaRepository) {}
+  constructor(
+    private readonly empresas: EmpresaRepository,
+    private readonly registrarAuditoria: RegistrarAuditoriaUseCase,
+  ) {}
 
   async execute(input: CreateEmpresaInput): Promise<CreateEmpresaResult> {
     const cnpjCpfResult = CnpjCpf.create(input.cnpjCpf)
@@ -60,6 +64,14 @@ export class CreateEmpresaUseCase {
       })
 
       await this.empresas.create(empresa)
+
+      await this.registrarAuditoria.execute({
+        tenantId: input.tenantId,
+        entidade: 'empresa',
+        entidadeId: empresa.id.toString(),
+        acao: 'criar',
+        dadosDepois: { razaoSocial: empresa.razaoSocial, status: empresa.status },
+      })
 
       return right({ empresa })
     } catch (err) {

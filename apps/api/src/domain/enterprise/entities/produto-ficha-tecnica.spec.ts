@@ -111,4 +111,22 @@ describe(ProdutoFichaTecnica.name, () => {
       expect(sut.updatedAt.getTime()).toBeGreaterThan(before.getTime())
     })
   })
+
+  describe('markAsDeleted()', () => {
+    it('define deletedAt e atualiza updatedAt', () => {
+      const before = new Date('2024-01-01')
+      const sut = ProdutoFichaTecnica.create({
+        tenantId: 'tenant-1',
+        produtoId: 'produto-1',
+        descricaoComponente: 'Soja',
+        createdAt: before,
+        updatedAt: before,
+      })
+
+      sut.markAsDeleted()
+
+      expect(sut.deletedAt).toBeInstanceOf(Date)
+      expect(sut.updatedAt.getTime()).toBeGreaterThan(before.getTime())
+    })
+  })
 })

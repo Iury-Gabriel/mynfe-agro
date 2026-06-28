@@ -56,6 +56,11 @@ export class ProdutoFichaTecnica extends Entity<ProdutoFichaTecnicaProps> {
     this.props.updatedAt = new Date()
   }
 
+  markAsDeleted(): void {
+    this.props.deletedAt = new Date()
+    this.touch()
+  }
+
   update(input: UpdateProdutoFichaTecnica): void {
     if (input.descricaoComponente !== undefined) {
       this.props.descricaoComponente = input.descricaoComponente

@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common'
 import { left, right, type Either } from '@/core/either'
 import { UnexpectedError } from '@/core/errors/unexpected-error'
 import { AreaRepository } from '@/domain/application/repositories/area-repository'
+import { RegistrarAuditoriaUseCase } from '@/domain/application/use-cases/auditoria/registrar-auditoria-use-case'
 import { Area } from '@/domain/enterprise/entities/area'
 
 export interface CreateAreaInput {
@@ -23,7 +24,10 @@ type CreateAreaResult = Either<UnexpectedError, CreateAreaOutput>
 
 @Injectable()
 export class CreateAreaUseCase {
-  constructor(private readonly areas: AreaRepository) {}
+  constructor(
+    private readonly areas: AreaRepository,
+    private readonly registrarAuditoria: RegistrarAuditoriaUseCase,
+  ) {}
 
   async execute(input: CreateAreaInput): Promise<CreateAreaResult> {
     try {
@@ -40,6 +44,14 @@ export class CreateAreaUseCase {
       })
 
       await this.areas.create(area)
+
+      await this.registrarAuditoria.execute({
+        tenantId: input.tenantId,
+        entidade: 'area',
+        entidadeId: area.id.toString(),
+        acao: 'criar',
+        dadosDepois: { identificacao: area.identificacao },
+      })
 
       return right({ area })
     } catch (err) {

@@ -28,6 +28,13 @@ vi.mock('@/providers/auth-context', () => ({
   useAuth: () => useAuthMock() as unknown,
 }))
 
+vi.mock('@/features/admin/api/fichas-tecnicas-api', () => ({
+  useFichasTecnicas: () => ({ data: { fichasTecnicas: [] }, isLoading: false, isError: false }),
+  useCreateFichaTecnica: () => ({ mutate: vi.fn(), isPending: false }),
+  useUpdateFichaTecnica: () => ({ mutate: vi.fn(), isPending: false }),
+  useDeleteFichaTecnica: () => ({ mutate: vi.fn(), isPending: false }),
+}))
+
 const ALL_PERMS = ['produto:read', 'produto:create', 'produto:update', 'produto:status']
 
 function makeProduto(overrides: Partial<Produto> = {}): Produto {
@@ -266,6 +273,32 @@ describe('ProdutosPage', () => {
     await waitFor(() => {
       expect(screen.queryByRole('heading', { name: 'Inativar produto' })).not.toBeInTheDocument()
     })
+  })
+
+  it('abre a ficha técnica de um produto embalado e fecha limpando a seleção', async () => {
+    mockList([makeProduto({ tipo: 'embalado', descricao: 'Ração' })])
+    const user = userEvent.setup({ delay: null })
+    renderWithProviders(<ProdutosPage />)
+
+    await screen.findByText('Ração')
+    await user.click(screen.getByRole('button', { name: /Ficha técnica/ }))
+
+    expect(screen.getByRole('heading', { name: 'Ficha técnica' })).toBeInTheDocument()
+    expect(screen.getByText('Nenhum componente cadastrado.')).toBeInTheDocument()
+
+    await user.keyboard('{Escape}')
+
+    await waitFor(() => {
+      expect(screen.queryByRole('heading', { name: 'Ficha técnica' })).not.toBeInTheDocument()
+    })
+  })
+
+  it('não exibe o botão de ficha técnica para produto bruto', async () => {
+    mockList([makeProduto({ tipo: 'bruto' })])
+    renderWithProviders(<ProdutosPage />)
+
+    await screen.findByText('Soja em grão')
+    expect(screen.queryByRole('button', { name: /Ficha técnica/ })).not.toBeInTheDocument()
   })
 
   it('filtra produtos pela busca', async () => {

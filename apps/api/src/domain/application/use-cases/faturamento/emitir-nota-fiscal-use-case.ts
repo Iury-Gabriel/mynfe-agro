@@ -7,6 +7,7 @@ import { EmpresaRepository } from '@/domain/application/repositories/empresa-rep
 import { NotaFiscalRepository } from '@/domain/application/repositories/nota-fiscal-repository'
 import { PedidoRepository } from '@/domain/application/repositories/pedido-repository'
 import { ProdutoRepository } from '@/domain/application/repositories/produto-repository'
+import { RegistrarAuditoriaUseCase } from '@/domain/application/use-cases/auditoria/registrar-auditoria-use-case'
 import { EmpresaNotFoundError } from '@/domain/application/use-cases/errors/empresa-not-found-error'
 import { NotaJaEmitidaError } from '@/domain/application/use-cases/errors/nota-ja-emitida-error'
 import { PedidoNaoFaturavelError } from '@/domain/application/use-cases/errors/pedido-nao-faturavel-error'
@@ -47,6 +48,7 @@ export class EmitirNotaFiscalUseCase {
     private readonly pedidos: PedidoRepository,
     private readonly produtos: ProdutoRepository,
     private readonly fiscalProvider: FiscalProvider,
+    private readonly registrarAuditoria: RegistrarAuditoriaUseCase,
   ) {}
 
   async execute(input: EmitirNotaFiscalInput): Promise<EmitirNotaFiscalResult> {
@@ -142,6 +144,20 @@ export class EmitirNotaFiscalUseCase {
       }
 
       await this.notas.atualizarStatusComEvento({ nota, evento: aplicacao.value })
+
+      await this.registrarAuditoria.execute({
+        tenantId: input.tenantId,
+        entidade: 'nota_fiscal',
+        entidadeId: nota.id.toString(),
+        acao: 'emitir',
+        dadosDepois: {
+          pedidoId: nota.pedidoId,
+          empresaEmitenteId: nota.empresaEmitenteId,
+          numero: nota.numero,
+          serie: nota.serie,
+          status: nota.status,
+        },
+      })
 
       return right({ nota })
     } catch (err) {

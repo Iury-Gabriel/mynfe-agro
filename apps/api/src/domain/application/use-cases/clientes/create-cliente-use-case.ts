@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common'
 import { left, right, type Either } from '@/core/either'
 import { UnexpectedError } from '@/core/errors/unexpected-error'
 import { ClienteRepository } from '@/domain/application/repositories/cliente-repository'
+import { RegistrarAuditoriaUseCase } from '@/domain/application/use-cases/auditoria/registrar-auditoria-use-case'
 import { InvalidCnpjCpfError } from '@/domain/application/use-cases/errors/invalid-cnpj-cpf-error'
 import { Cliente, type IndicadorIe, type TipoPessoaCliente } from '@/domain/enterprise/entities/cliente'
 import { ClienteEnderecoEntrega } from '@/domain/enterprise/entities/cliente-endereco-entrega'
@@ -47,7 +48,10 @@ type CreateClienteResult = Either<InvalidCnpjCpfError | UnexpectedError, CreateC
 
 @Injectable()
 export class CreateClienteUseCase {
-  constructor(private readonly clientes: ClienteRepository) {}
+  constructor(
+    private readonly clientes: ClienteRepository,
+    private readonly registrarAuditoria: RegistrarAuditoriaUseCase,
+  ) {}
 
   async execute(input: CreateClienteInput): Promise<CreateClienteResult> {
     const cnpjCpfResult = CnpjCpf.create(input.cnpjCpf)
@@ -95,6 +99,14 @@ export class CreateClienteUseCase {
       }
 
       await this.clientes.create(cliente)
+
+      await this.registrarAuditoria.execute({
+        tenantId: cliente.tenantId,
+        entidade: 'cliente',
+        entidadeId: cliente.id.toString(),
+        acao: 'criar',
+        dadosDepois: { razaoSocialNome: cliente.razaoSocialNome },
+      })
 
       return right({ cliente })
     } catch (err) {

@@ -1,9 +1,11 @@
+import { InMemoryAuditoriaLogRepository } from '@test/repositories/in-memory-auditoria-log-repository'
 import { InMemoryClienteRepository } from '@test/repositories/in-memory-cliente-repository'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { CreateClienteUseCase, type CreateClienteInput } from './create-cliente-use-case'
 
 import { UnexpectedError } from '@/core/errors/unexpected-error'
+import { RegistrarAuditoriaUseCase } from '@/domain/application/use-cases/auditoria/registrar-auditoria-use-case'
 import { InvalidCnpjCpfError } from '@/domain/application/use-cases/errors/invalid-cnpj-cpf-error'
 
 function makeInput(override: Partial<CreateClienteInput> = {}): CreateClienteInput {
@@ -20,11 +22,13 @@ function makeInput(override: Partial<CreateClienteInput> = {}): CreateClienteInp
 
 describe(CreateClienteUseCase.name, () => {
   let clienteRepo: InMemoryClienteRepository
+  let auditoriaRepo: InMemoryAuditoriaLogRepository
   let sut: CreateClienteUseCase
 
   beforeEach(() => {
     clienteRepo = new InMemoryClienteRepository()
-    sut = new CreateClienteUseCase(clienteRepo)
+    auditoriaRepo = new InMemoryAuditoriaLogRepository()
+    sut = new CreateClienteUseCase(clienteRepo, new RegistrarAuditoriaUseCase(auditoriaRepo))
   })
 
   it('cria cliente no tenant com CNPJ válido', async () => {
@@ -108,5 +112,26 @@ describe(CreateClienteUseCase.name, () => {
 
     expect(result.isLeft()).toBe(true)
     expect(result.value).toBeInstanceOf(UnexpectedError)
+  })
+
+  it('registra auditoria de criação', async () => {
+    await sut.execute(makeInput({ razaoSocialNome: 'Cliente Auditado' }))
+
+    expect(auditoriaRepo.logs).toHaveLength(1)
+    expect(auditoriaRepo.logs[0]).toMatchObject({
+      entidade: 'cliente',
+      acao: 'criar',
+      dadosDepois: { razaoSocialNome: 'Cliente Auditado' },
+    })
+    expect(auditoriaRepo.logs[0].entidadeId).toBe(clienteRepo.clientes[0].id.toString())
+  })
+
+  it('não quebra quando a auditoria falha (best-effort)', async () => {
+    auditoriaRepo.shouldFailOnCreate = true
+
+    const result = await sut.execute(makeInput())
+
+    expect(result.isRight()).toBe(true)
+    expect(auditoriaRepo.logs).toHaveLength(0)
   })
 })

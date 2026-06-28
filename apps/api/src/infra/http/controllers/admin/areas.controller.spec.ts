@@ -2,6 +2,7 @@ import { APP_GUARD } from '@nestjs/core'
 import { Test } from '@nestjs/testing'
 import { makeArea } from '@test/factories/make-area'
 import { InMemoryAreaRepository } from '@test/repositories/in-memory-area-repository'
+import { InMemoryAuditoriaLogRepository } from '@test/repositories/in-memory-auditoria-log-repository'
 import request from 'supertest'
 import { describe, beforeEach, afterAll, it, expect } from 'vitest'
 
@@ -10,10 +11,12 @@ import { AreasController } from './areas.controller'
 import type { CanActivate, ExecutionContext, INestApplication } from '@nestjs/common'
 
 import { AreaRepository } from '@/domain/application/repositories/area-repository'
+import { AuditoriaLogRepository } from '@/domain/application/repositories/auditoria-log-repository'
 import { CreateAreaUseCase } from '@/domain/application/use-cases/areas/create-area-use-case'
 import { DeleteAreaUseCase } from '@/domain/application/use-cases/areas/delete-area-use-case'
 import { ListAreasUseCase } from '@/domain/application/use-cases/areas/list-areas-use-case'
 import { UpdateAreaUseCase } from '@/domain/application/use-cases/areas/update-area-use-case'
+import { RegistrarAuditoriaUseCase } from '@/domain/application/use-cases/auditoria/registrar-auditoria-use-case'
 import { PermissionGuard } from '@/infra/http/guards/permission.guard'
 
 const mockUser = {
@@ -52,6 +55,8 @@ describe(AreasController.name, () => {
         { provide: APP_GUARD, useClass: MockAuthGuard },
         { provide: APP_GUARD, useClass: PermissionGuard },
         { provide: AreaRepository, useValue: repository },
+        { provide: AuditoriaLogRepository, useClass: InMemoryAuditoriaLogRepository },
+        RegistrarAuditoriaUseCase,
         ListAreasUseCase,
         CreateAreaUseCase,
         UpdateAreaUseCase,

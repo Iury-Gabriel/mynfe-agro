@@ -1,9 +1,11 @@
 import { InMemoryAreaRepository } from '@test/repositories/in-memory-area-repository'
+import { InMemoryAuditoriaLogRepository } from '@test/repositories/in-memory-auditoria-log-repository'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { CreateAreaUseCase, type CreateAreaInput } from './create-area-use-case'
 
 import { UnexpectedError } from '@/core/errors/unexpected-error'
+import { RegistrarAuditoriaUseCase } from '@/domain/application/use-cases/auditoria/registrar-auditoria-use-case'
 
 function makeInput(override: Partial<CreateAreaInput> = {}): CreateAreaInput {
   return {
@@ -16,11 +18,13 @@ function makeInput(override: Partial<CreateAreaInput> = {}): CreateAreaInput {
 
 describe(CreateAreaUseCase.name, () => {
   let areaRepo: InMemoryAreaRepository
+  let auditoriaRepo: InMemoryAuditoriaLogRepository
   let sut: CreateAreaUseCase
 
   beforeEach(() => {
     areaRepo = new InMemoryAreaRepository()
-    sut = new CreateAreaUseCase(areaRepo)
+    auditoriaRepo = new InMemoryAuditoriaLogRepository()
+    sut = new CreateAreaUseCase(areaRepo, new RegistrarAuditoriaUseCase(auditoriaRepo))
   })
 
   it('cria área no tenant', async () => {
@@ -62,5 +66,29 @@ describe(CreateAreaUseCase.name, () => {
 
     expect(result.isLeft()).toBe(true)
     expect(result.value).toBeInstanceOf(UnexpectedError)
+  })
+
+  it('registra auditoria após criar a área', async () => {
+    const result = await sut.execute(makeInput())
+
+    expect(result.isRight()).toBe(true)
+    expect(auditoriaRepo.logs).toHaveLength(1)
+    if (result.isRight()) {
+      expect(auditoriaRepo.logs[0]).toMatchObject({
+        entidade: 'area',
+        acao: 'criar',
+        entidadeId: result.value.area.id.toString(),
+        dadosDepois: { identificacao: 'Talhão 01' },
+      })
+    }
+  })
+
+  it('não falha a operação quando a auditoria falha (best-effort)', async () => {
+    auditoriaRepo.shouldFailOnCreate = true
+
+    const result = await sut.execute(makeInput())
+
+    expect(result.isRight()).toBe(true)
+    expect(auditoriaRepo.logs).toHaveLength(0)
   })
 })

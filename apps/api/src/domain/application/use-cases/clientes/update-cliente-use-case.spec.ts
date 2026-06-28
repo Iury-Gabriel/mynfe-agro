@@ -1,20 +1,24 @@
 import { makeCliente } from '@test/factories/make-cliente'
+import { InMemoryAuditoriaLogRepository } from '@test/repositories/in-memory-auditoria-log-repository'
 import { InMemoryClienteRepository } from '@test/repositories/in-memory-cliente-repository'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { UpdateClienteUseCase } from './update-cliente-use-case'
 
 import { UnexpectedError } from '@/core/errors/unexpected-error'
+import { RegistrarAuditoriaUseCase } from '@/domain/application/use-cases/auditoria/registrar-auditoria-use-case'
 import { ClienteNotFoundError } from '@/domain/application/use-cases/errors/cliente-not-found-error'
 import { InvalidCnpjCpfError } from '@/domain/application/use-cases/errors/invalid-cnpj-cpf-error'
 
 describe(UpdateClienteUseCase.name, () => {
   let clienteRepo: InMemoryClienteRepository
+  let auditoriaRepo: InMemoryAuditoriaLogRepository
   let sut: UpdateClienteUseCase
 
   beforeEach(() => {
     clienteRepo = new InMemoryClienteRepository()
-    sut = new UpdateClienteUseCase(clienteRepo)
+    auditoriaRepo = new InMemoryAuditoriaLogRepository()
+    sut = new UpdateClienteUseCase(clienteRepo, new RegistrarAuditoriaUseCase(auditoriaRepo))
   })
 
   it('atualiza dados cadastrais do cliente', async () => {
@@ -99,5 +103,40 @@ describe(UpdateClienteUseCase.name, () => {
 
     expect(result.isLeft()).toBe(true)
     expect(result.value).toBeInstanceOf(UnexpectedError)
+  })
+
+  it('registra auditoria de edição com dadosAntes e dadosDepois', async () => {
+    await clienteRepo.create(
+      makeCliente({ id: 'cliente-1', tenantId: 'tenant-1', razaoSocialNome: 'Antigo' }),
+    )
+
+    await sut.execute({
+      tenantId: 'tenant-1',
+      clienteId: 'cliente-1',
+      razaoSocialNome: 'Novo Nome',
+    })
+
+    expect(auditoriaRepo.logs).toHaveLength(1)
+    expect(auditoriaRepo.logs[0]).toMatchObject({
+      entidade: 'cliente',
+      acao: 'editar',
+      entidadeId: 'cliente-1',
+      dadosAntes: { razaoSocialNome: 'Antigo' },
+      dadosDepois: { razaoSocialNome: 'Novo Nome' },
+    })
+  })
+
+  it('não quebra quando a auditoria falha (best-effort)', async () => {
+    await clienteRepo.create(makeCliente({ id: 'cliente-1', tenantId: 'tenant-1' }))
+    auditoriaRepo.shouldFailOnCreate = true
+
+    const result = await sut.execute({
+      tenantId: 'tenant-1',
+      clienteId: 'cliente-1',
+      razaoSocialNome: 'Novo Nome',
+    })
+
+    expect(result.isRight()).toBe(true)
+    expect(auditoriaRepo.logs).toHaveLength(0)
   })
 })

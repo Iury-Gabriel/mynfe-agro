@@ -1,19 +1,23 @@
 import { makeFazenda } from '@test/factories/make-fazenda'
+import { InMemoryAuditoriaLogRepository } from '@test/repositories/in-memory-auditoria-log-repository'
 import { InMemoryFazendaRepository } from '@test/repositories/in-memory-fazenda-repository'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { UpdateFazendaUseCase } from './update-fazenda-use-case'
 
 import { UnexpectedError } from '@/core/errors/unexpected-error'
+import { RegistrarAuditoriaUseCase } from '@/domain/application/use-cases/auditoria/registrar-auditoria-use-case'
 import { FazendaNotFoundError } from '@/domain/application/use-cases/errors/fazenda-not-found-error'
 
 describe(UpdateFazendaUseCase.name, () => {
   let fazendaRepo: InMemoryFazendaRepository
+  let auditoriaRepo: InMemoryAuditoriaLogRepository
   let sut: UpdateFazendaUseCase
 
   beforeEach(() => {
     fazendaRepo = new InMemoryFazendaRepository()
-    sut = new UpdateFazendaUseCase(fazendaRepo)
+    auditoriaRepo = new InMemoryAuditoriaLogRepository()
+    sut = new UpdateFazendaUseCase(fazendaRepo, new RegistrarAuditoriaUseCase(auditoriaRepo))
   })
 
   it('atualiza dados cadastrais da fazenda', async () => {
@@ -72,5 +76,41 @@ describe(UpdateFazendaUseCase.name, () => {
 
     expect(result.isLeft()).toBe(true)
     expect(result.value).toBeInstanceOf(UnexpectedError)
+  })
+
+  it('registra auditoria de edição com dadosAntes e dadosDepois', async () => {
+    await fazendaRepo.create(
+      makeFazenda({ id: 'fazenda-1', tenantId: 'tenant-1', nome: 'Antiga' }),
+    )
+
+    const result = await sut.execute({
+      tenantId: 'tenant-1',
+      fazendaId: 'fazenda-1',
+      nome: 'Nova',
+    })
+
+    expect(result.isRight()).toBe(true)
+    expect(auditoriaRepo.logs).toHaveLength(1)
+    expect(auditoriaRepo.logs[0]).toMatchObject({
+      entidade: 'fazenda',
+      acao: 'editar',
+      entidadeId: 'fazenda-1',
+      dadosAntes: { nome: 'Antiga' },
+      dadosDepois: { nome: 'Nova' },
+    })
+  })
+
+  it('mantém a edição mesmo se a auditoria falhar', async () => {
+    await fazendaRepo.create(makeFazenda({ id: 'fazenda-1', tenantId: 'tenant-1' }))
+    auditoriaRepo.shouldFailOnCreate = true
+
+    const result = await sut.execute({
+      tenantId: 'tenant-1',
+      fazendaId: 'fazenda-1',
+      nome: 'Nova',
+    })
+
+    expect(result.isRight()).toBe(true)
+    expect(auditoriaRepo.logs).toHaveLength(0)
   })
 })

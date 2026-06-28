@@ -1,9 +1,11 @@
+import { InMemoryAuditoriaLogRepository } from '@test/repositories/in-memory-auditoria-log-repository'
 import { InMemoryEmpresaRepository } from '@test/repositories/in-memory-empresa-repository'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { CreateEmpresaUseCase, type CreateEmpresaInput } from './create-empresa-use-case'
 
 import { UnexpectedError } from '@/core/errors/unexpected-error'
+import { RegistrarAuditoriaUseCase } from '@/domain/application/use-cases/auditoria/registrar-auditoria-use-case'
 import { InvalidCnpjCpfError } from '@/domain/application/use-cases/errors/invalid-cnpj-cpf-error'
 
 function makeInput(override: Partial<CreateEmpresaInput> = {}): CreateEmpresaInput {
@@ -21,11 +23,13 @@ function makeInput(override: Partial<CreateEmpresaInput> = {}): CreateEmpresaInp
 
 describe(CreateEmpresaUseCase.name, () => {
   let empresaRepo: InMemoryEmpresaRepository
+  let auditoriaRepo: InMemoryAuditoriaLogRepository
   let sut: CreateEmpresaUseCase
 
   beforeEach(() => {
     empresaRepo = new InMemoryEmpresaRepository()
-    sut = new CreateEmpresaUseCase(empresaRepo)
+    auditoriaRepo = new InMemoryAuditoriaLogRepository()
+    sut = new CreateEmpresaUseCase(empresaRepo, new RegistrarAuditoriaUseCase(auditoriaRepo))
   })
 
   it('cria empresa no tenant com CNPJ válido', async () => {
@@ -83,5 +87,28 @@ describe(CreateEmpresaUseCase.name, () => {
 
     expect(result.isLeft()).toBe(true)
     expect(result.value).toBeInstanceOf(UnexpectedError)
+  })
+
+  it('registra auditoria de criação no caminho feliz', async () => {
+    const result = await sut.execute(makeInput())
+
+    expect(result.isRight()).toBe(true)
+    expect(auditoriaRepo.logs).toHaveLength(1)
+    const log = auditoriaRepo.logs[0]
+    expect(log.entidade).toBe('empresa')
+    expect(log.acao).toBe('criar')
+    if (result.isRight()) {
+      expect(log.entidadeId).toBe(result.value.empresa.id.toString())
+    }
+    expect(log.dadosDepois).toMatchObject({ razaoSocial: 'Agro LTDA', status: 'ativo' })
+  })
+
+  it('mantém a operação bem-sucedida quando a auditoria falha (best-effort)', async () => {
+    auditoriaRepo.shouldFailOnCreate = true
+
+    const result = await sut.execute(makeInput())
+
+    expect(result.isRight()).toBe(true)
+    expect(auditoriaRepo.logs).toHaveLength(0)
   })
 })

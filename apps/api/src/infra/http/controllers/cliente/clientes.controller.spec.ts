@@ -1,6 +1,7 @@
 import { APP_GUARD } from '@nestjs/core'
 import { Test } from '@nestjs/testing'
 import { makeCliente } from '@test/factories'
+import { InMemoryAuditoriaLogRepository } from '@test/repositories/in-memory-auditoria-log-repository'
 import { InMemoryClienteRepository } from '@test/repositories/in-memory-cliente-repository'
 import request from 'supertest'
 import { describe, beforeEach, afterAll, it, expect } from 'vitest'
@@ -9,7 +10,9 @@ import { ClientesController } from './clientes.controller'
 
 import type { CanActivate, ExecutionContext, INestApplication } from '@nestjs/common'
 
+import { AuditoriaLogRepository } from '@/domain/application/repositories/auditoria-log-repository'
 import { ClienteRepository } from '@/domain/application/repositories/cliente-repository'
+import { RegistrarAuditoriaUseCase } from '@/domain/application/use-cases/auditoria/registrar-auditoria-use-case'
 import { CreateClienteUseCase } from '@/domain/application/use-cases/clientes/create-cliente-use-case'
 import { DeleteClienteUseCase } from '@/domain/application/use-cases/clientes/delete-cliente-use-case'
 import { ListClientesUseCase } from '@/domain/application/use-cases/clientes/list-clientes-use-case'
@@ -56,6 +59,8 @@ describe(ClientesController.name, () => {
         { provide: APP_GUARD, useClass: MockAuthGuard },
         { provide: APP_GUARD, useClass: PermissionGuard },
         { provide: ClienteRepository, useValue: repo },
+        { provide: AuditoriaLogRepository, useClass: InMemoryAuditoriaLogRepository },
+        RegistrarAuditoriaUseCase,
         ListClientesUseCase,
         CreateClienteUseCase,
         UpdateClienteUseCase,

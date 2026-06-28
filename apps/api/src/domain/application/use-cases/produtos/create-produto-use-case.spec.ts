@@ -1,9 +1,11 @@
+import { InMemoryAuditoriaLogRepository } from '@test/repositories/in-memory-auditoria-log-repository'
 import { InMemoryProdutoRepository } from '@test/repositories/in-memory-produto-repository'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { CreateProdutoUseCase, type CreateProdutoInput } from './create-produto-use-case'
 
 import { UnexpectedError } from '@/core/errors/unexpected-error'
+import { RegistrarAuditoriaUseCase } from '@/domain/application/use-cases/auditoria/registrar-auditoria-use-case'
 
 function makeInput(override: Partial<CreateProdutoInput> = {}): CreateProdutoInput {
   return {
@@ -18,11 +20,13 @@ function makeInput(override: Partial<CreateProdutoInput> = {}): CreateProdutoInp
 
 describe(CreateProdutoUseCase.name, () => {
   let produtoRepo: InMemoryProdutoRepository
+  let auditoriaRepo: InMemoryAuditoriaLogRepository
   let sut: CreateProdutoUseCase
 
   beforeEach(() => {
     produtoRepo = new InMemoryProdutoRepository()
-    sut = new CreateProdutoUseCase(produtoRepo)
+    auditoriaRepo = new InMemoryAuditoriaLogRepository()
+    sut = new CreateProdutoUseCase(produtoRepo, new RegistrarAuditoriaUseCase(auditoriaRepo))
   })
 
   it('cria produto no tenant', async () => {
@@ -57,6 +61,30 @@ describe(CreateProdutoUseCase.name, () => {
       expect(result.value.produto.ncm).toBe('12019000')
       expect(result.value.produto.aliquotas).toEqual({ icms: 12 })
     }
+  })
+
+  it('registra auditoria de criação', async () => {
+    const result = await sut.execute(makeInput())
+
+    expect(result.isRight()).toBe(true)
+    expect(auditoriaRepo.logs).toHaveLength(1)
+    expect(auditoriaRepo.logs[0]).toMatchObject({
+      entidade: 'produto',
+      acao: 'criar',
+      dadosDepois: { descricao: 'Soja', status: 'ativo' },
+    })
+    if (result.isRight()) {
+      expect(auditoriaRepo.logs[0].entidadeId).toBe(result.value.produto.id.toString())
+    }
+  })
+
+  it('mantém o sucesso quando a auditoria falha (best-effort)', async () => {
+    auditoriaRepo.shouldFailOnCreate = true
+
+    const result = await sut.execute(makeInput())
+
+    expect(result.isRight()).toBe(true)
+    expect(auditoriaRepo.logs).toHaveLength(0)
   })
 
   it('retorna UnexpectedError quando o repositório lança', async () => {

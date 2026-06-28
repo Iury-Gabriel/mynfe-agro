@@ -5,6 +5,7 @@ import type { AmbienteFiscal, Empresa, EmpresaEndereco } from '@/domain/enterpri
 import { left, right, type Either } from '@/core/either'
 import { UnexpectedError } from '@/core/errors/unexpected-error'
 import { EmpresaRepository } from '@/domain/application/repositories/empresa-repository'
+import { RegistrarAuditoriaUseCase } from '@/domain/application/use-cases/auditoria/registrar-auditoria-use-case'
 import { EmpresaNotFoundError } from '@/domain/application/use-cases/errors/empresa-not-found-error'
 import { InvalidCnpjCpfError } from '@/domain/application/use-cases/errors/invalid-cnpj-cpf-error'
 import { CnpjCpf } from '@/domain/enterprise/entities/value-objects/cnpj-cpf'
@@ -35,7 +36,10 @@ type UpdateEmpresaResult = Either<
 
 @Injectable()
 export class UpdateEmpresaUseCase {
-  constructor(private readonly empresas: EmpresaRepository) {}
+  constructor(
+    private readonly empresas: EmpresaRepository,
+    private readonly registrarAuditoria: RegistrarAuditoriaUseCase,
+  ) {}
 
   async execute(input: UpdateEmpresaInput): Promise<UpdateEmpresaResult> {
     const empresa = await this.empresas.findById(input.empresaId, input.tenantId)
@@ -47,6 +51,8 @@ export class UpdateEmpresaUseCase {
       if (cnpjCpfResult.isLeft()) return left(cnpjCpfResult.value)
       cnpjCpf = cnpjCpfResult.value
     }
+
+    const dadosAntes = { razaoSocial: empresa.razaoSocial, status: empresa.status }
 
     empresa.updateCadastro({
       razaoSocial: input.razaoSocial,
@@ -67,6 +73,15 @@ export class UpdateEmpresaUseCase {
       console.error('[UpdateEmpresaUseCase] unexpected error:', err)
       return left(new UnexpectedError(err))
     }
+
+    await this.registrarAuditoria.execute({
+      tenantId: input.tenantId,
+      entidade: 'empresa',
+      entidadeId: empresa.id.toString(),
+      acao: 'editar',
+      dadosAntes,
+      dadosDepois: { razaoSocial: empresa.razaoSocial, status: empresa.status },
+    })
 
     return right({ empresa })
   }

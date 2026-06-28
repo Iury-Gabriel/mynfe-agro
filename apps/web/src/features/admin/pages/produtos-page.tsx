@@ -1,4 +1,4 @@
-import { Pencil, Plus, Power, PowerOff } from 'lucide-react'
+import { ClipboardList, Pencil, Plus, Power, PowerOff } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
@@ -12,6 +12,7 @@ import {
   useSetProdutoStatus,
   useUpdateProduto,
 } from '@/features/admin/api/produtos-api'
+import { FichaTecnicaDialog } from '@/features/admin/components/produtos/ficha-tecnica-dialog'
 import {
   ProdutoFormDialog,
   toCreatePayload,
@@ -53,6 +54,7 @@ export function ProdutosPage(): ReactElement {
   const [search, setSearch] = useState('')
   const [formOpen, setFormOpen] = useState(false)
   const [statusOpen, setStatusOpen] = useState(false)
+  const [fichaOpen, setFichaOpen] = useState(false)
   const [selected, setSelected] = useState<Produto | null>(null)
 
   const { data, isLoading, isError, refetch } = useProdutos({ page })
@@ -87,6 +89,11 @@ export function ProdutosPage(): ReactElement {
   function openStatus(produto: Produto) {
     setSelected(produto)
     setStatusOpen(true)
+  }
+
+  function openFicha(produto: Produto) {
+    setSelected(produto)
+    setFichaOpen(true)
   }
 
   function handleSubmit(values: ProdutoFormValues) {
@@ -151,6 +158,11 @@ export function ProdutosPage(): ReactElement {
         {canUpdate && (
           <ActionButton variant="ghost" size="sm" onClick={() => openEdit(produto)}>
             <Pencil /> Editar
+          </ActionButton>
+        )}
+        {produto.tipo === 'embalado' && (
+          <ActionButton variant="ghost" size="sm" onClick={() => openFicha(produto)}>
+            <ClipboardList /> Ficha técnica
           </ActionButton>
         )}
         {canStatus && (
@@ -253,6 +265,18 @@ export function ProdutosPage(): ReactElement {
           }}
           onConfirm={handleStatusConfirm}
           isPending={setStatus.isPending}
+        />
+      )}
+
+      {fichaOpen && selected && (
+        <FichaTecnicaDialog
+          produto={selected}
+          canEdit={canUpdate}
+          open={fichaOpen}
+          onOpenChange={(open) => {
+            setFichaOpen(open)
+            if (!open) setSelected(null)
+          }}
         />
       )}
     </div>

@@ -5,6 +5,7 @@ import { UnexpectedError } from '@/core/errors/unexpected-error'
 import { EstoqueSaldoRepository } from '@/domain/application/repositories/estoque-saldo-repository'
 import { EstoqueWriteRepository } from '@/domain/application/repositories/estoque-write-repository'
 import { LoteRepository } from '@/domain/application/repositories/lote-repository'
+import { RegistrarAuditoriaUseCase } from '@/domain/application/use-cases/auditoria/registrar-auditoria-use-case'
 import { EstoqueInsuficienteError } from '@/domain/application/use-cases/errors/estoque-insuficiente-error'
 import { LoteNotFoundError } from '@/domain/application/use-cases/errors/lote-not-found-error'
 import { MovimentoInvalidoError } from '@/domain/application/use-cases/errors/movimento-invalido-error'
@@ -38,6 +39,7 @@ export class AjustarEstoqueUseCase {
     private readonly estoqueWrite: EstoqueWriteRepository,
     private readonly saldos: EstoqueSaldoRepository,
     private readonly lotes: LoteRepository,
+    private readonly registrarAuditoria: RegistrarAuditoriaUseCase,
   ) {}
 
   async execute(input: AjustarEstoqueInput): Promise<AjustarEstoqueResult> {
@@ -108,6 +110,22 @@ export class AjustarEstoqueUseCase {
       })
 
       await this.estoqueWrite.registrarAjuste({ movimento, saldo, lote })
+
+      await this.registrarAuditoria.execute({
+        tenantId: input.tenantId,
+        usuarioId: input.usuarioId ?? null,
+        entidade: 'estoque',
+        entidadeId: saldo.id.toString(),
+        acao: 'ajustar',
+        dadosDepois: {
+          empresaId: input.empresaId,
+          produtoId: input.produtoId,
+          loteId,
+          delta: input.delta,
+          motivo: input.motivo,
+          saldoAtual: saldo.quantidadeDisponivel,
+        },
+      })
 
       return right({ movimento, saldo })
     } catch (err) {

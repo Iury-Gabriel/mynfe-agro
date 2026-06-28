@@ -1,6 +1,7 @@
 import { APP_GUARD } from '@nestjs/core'
 import { Test } from '@nestjs/testing'
 import { makeFazenda } from '@test/factories/make-fazenda'
+import { InMemoryAuditoriaLogRepository } from '@test/repositories/in-memory-auditoria-log-repository'
 import { InMemoryFazendaRepository } from '@test/repositories/in-memory-fazenda-repository'
 import request from 'supertest'
 import { describe, beforeEach, afterAll, it, expect } from 'vitest'
@@ -9,7 +10,9 @@ import { FazendasController } from './fazendas.controller'
 
 import type { CanActivate, ExecutionContext, INestApplication } from '@nestjs/common'
 
+import { AuditoriaLogRepository } from '@/domain/application/repositories/auditoria-log-repository'
 import { FazendaRepository } from '@/domain/application/repositories/fazenda-repository'
+import { RegistrarAuditoriaUseCase } from '@/domain/application/use-cases/auditoria/registrar-auditoria-use-case'
 import { CreateFazendaUseCase } from '@/domain/application/use-cases/fazendas/create-fazenda-use-case'
 import { DeleteFazendaUseCase } from '@/domain/application/use-cases/fazendas/delete-fazenda-use-case'
 import { ListFazendasUseCase } from '@/domain/application/use-cases/fazendas/list-fazendas-use-case'
@@ -52,6 +55,8 @@ describe(FazendasController.name, () => {
         { provide: APP_GUARD, useClass: MockAuthGuard },
         { provide: APP_GUARD, useClass: PermissionGuard },
         { provide: FazendaRepository, useValue: repository },
+        { provide: AuditoriaLogRepository, useClass: InMemoryAuditoriaLogRepository },
+        RegistrarAuditoriaUseCase,
         ListFazendasUseCase,
         CreateFazendaUseCase,
         UpdateFazendaUseCase,

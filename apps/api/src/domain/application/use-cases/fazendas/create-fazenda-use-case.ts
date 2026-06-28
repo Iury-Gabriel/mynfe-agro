@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common'
 import { left, right, type Either } from '@/core/either'
 import { UnexpectedError } from '@/core/errors/unexpected-error'
 import { FazendaRepository } from '@/domain/application/repositories/fazenda-repository'
+import { RegistrarAuditoriaUseCase } from '@/domain/application/use-cases/auditoria/registrar-auditoria-use-case'
 import { Fazenda } from '@/domain/enterprise/entities/fazenda'
 
 export interface CreateFazendaInput {
@@ -30,7 +31,10 @@ type CreateFazendaResult = Either<UnexpectedError, CreateFazendaOutput>
 
 @Injectable()
 export class CreateFazendaUseCase {
-  constructor(private readonly fazendas: FazendaRepository) {}
+  constructor(
+    private readonly fazendas: FazendaRepository,
+    private readonly registrarAuditoria: RegistrarAuditoriaUseCase,
+  ) {}
 
   async execute(input: CreateFazendaInput): Promise<CreateFazendaResult> {
     try {
@@ -54,6 +58,14 @@ export class CreateFazendaUseCase {
       })
 
       await this.fazendas.create(fazenda)
+
+      await this.registrarAuditoria.execute({
+        tenantId: input.tenantId,
+        entidade: 'fazenda',
+        entidadeId: fazenda.id.toString(),
+        acao: 'criar',
+        dadosDepois: { nome: fazenda.nome },
+      })
 
       return right({ fazenda })
     } catch (err) {

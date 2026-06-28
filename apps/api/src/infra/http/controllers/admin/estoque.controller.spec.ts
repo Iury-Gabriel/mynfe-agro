@@ -3,6 +3,7 @@ import { Test } from '@nestjs/testing'
 import { makeEstoqueMovimento } from '@test/factories/make-estoque-movimento'
 import { makeEstoqueSaldo } from '@test/factories/make-estoque-saldo'
 import { makeLote } from '@test/factories/make-lote'
+import { InMemoryAuditoriaLogRepository } from '@test/repositories/in-memory-auditoria-log-repository'
 import { InMemoryColheitaRepository } from '@test/repositories/in-memory-colheita-repository'
 import { InMemoryEstoqueMovimentoRepository } from '@test/repositories/in-memory-estoque-movimento-repository'
 import { InMemoryEstoqueSaldoRepository } from '@test/repositories/in-memory-estoque-saldo-repository'
@@ -15,10 +16,12 @@ import { EstoqueController } from './estoque.controller'
 
 import type { CanActivate, ExecutionContext, INestApplication } from '@nestjs/common'
 
+import { AuditoriaLogRepository } from '@/domain/application/repositories/auditoria-log-repository'
 import { EstoqueMovimentoRepository } from '@/domain/application/repositories/estoque-movimento-repository'
 import { EstoqueSaldoRepository } from '@/domain/application/repositories/estoque-saldo-repository'
 import { EstoqueWriteRepository } from '@/domain/application/repositories/estoque-write-repository'
 import { LoteRepository } from '@/domain/application/repositories/lote-repository'
+import { RegistrarAuditoriaUseCase } from '@/domain/application/use-cases/auditoria/registrar-auditoria-use-case'
 import { AjustarEstoqueUseCase } from '@/domain/application/use-cases/estoque/ajustar-estoque-use-case'
 import { GetPosicaoEstoqueUseCase } from '@/domain/application/use-cases/estoque/get-posicao-estoque-use-case'
 import { ListMovimentacoesUseCase } from '@/domain/application/use-cases/estoque/list-movimentacoes-use-case'
@@ -70,6 +73,8 @@ describe(EstoqueController.name, () => {
         { provide: EstoqueMovimentoRepository, useValue: movimentos },
         { provide: LoteRepository, useValue: lotes },
         { provide: EstoqueWriteRepository, useValue: write },
+        { provide: AuditoriaLogRepository, useClass: InMemoryAuditoriaLogRepository },
+        RegistrarAuditoriaUseCase,
         GetPosicaoEstoqueUseCase,
         ListMovimentacoesUseCase,
         AjustarEstoqueUseCase,

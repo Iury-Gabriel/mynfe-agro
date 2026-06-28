@@ -14,6 +14,7 @@ import { EmbalagensController } from './controllers/admin/embalagens.controller'
 import { EmpresasController } from './controllers/admin/empresas.controller'
 import { EstoqueController } from './controllers/admin/estoque.controller'
 import { FazendasController } from './controllers/admin/fazendas.controller'
+import { FichasTecnicasController } from './controllers/admin/fichas-tecnicas.controller'
 import { FilaFaturamentoController } from './controllers/admin/fila-faturamento.controller'
 import { LotesController } from './controllers/admin/lotes.controller'
 import { NotasFiscaisController } from './controllers/admin/notas-fiscais.controller'
@@ -83,6 +84,10 @@ import { CreateProdutoUseCase } from '@/domain/application/use-cases/produtos/cr
 import { DeactivateProdutoUseCase } from '@/domain/application/use-cases/produtos/deactivate-produto-use-case'
 import { ListProdutosUseCase } from '@/domain/application/use-cases/produtos/list-produtos-use-case'
 import { UpdateProdutoUseCase } from '@/domain/application/use-cases/produtos/update-produto-use-case'
+import { CreateFichaTecnicaUseCase } from '@/domain/application/use-cases/produtos-ficha-tecnica/create-ficha-tecnica-use-case'
+import { DeleteFichaTecnicaUseCase } from '@/domain/application/use-cases/produtos-ficha-tecnica/delete-ficha-tecnica-use-case'
+import { ListFichasTecnicasUseCase } from '@/domain/application/use-cases/produtos-ficha-tecnica/list-fichas-tecnicas-use-case'
+import { UpdateFichaTecnicaUseCase } from '@/domain/application/use-cases/produtos-ficha-tecnica/update-ficha-tecnica-use-case'
 import { CreateRoleUseCase } from '@/domain/application/use-cases/roles/create-role-use-case'
 import { DeleteRoleUseCase } from '@/domain/application/use-cases/roles/delete-role-use-case'
 import { ListRolesUseCase } from '@/domain/application/use-cases/roles/list-roles-use-case'
@@ -151,6 +156,7 @@ import { PlugNotasFiscalProvider } from '@/infra/fiscal/plugnotas-fiscal-provide
     AreasController,
     ClientesController,
     ProdutosController,
+    FichasTecnicasController,
     TabelaPrecosController,
     SafrasController,
     AtividadesCampoController,
@@ -197,6 +203,10 @@ import { PlugNotasFiscalProvider } from '@/infra/fiscal/plugnotas-fiscal-provide
     UpdateProdutoUseCase,
     ActivateProdutoUseCase,
     DeactivateProdutoUseCase,
+    ListFichasTecnicasUseCase,
+    CreateFichaTecnicaUseCase,
+    UpdateFichaTecnicaUseCase,
+    DeleteFichaTecnicaUseCase,
     ListTabelaPrecosUseCase,
     CreateTabelaPrecoUseCase,
     DeleteTabelaPrecoUseCase,

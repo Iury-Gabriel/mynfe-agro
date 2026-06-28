@@ -1,5 +1,6 @@
 import { makeEstoqueSaldo } from '@test/factories/make-estoque-saldo'
 import { makeLote } from '@test/factories/make-lote'
+import { InMemoryAuditoriaLogRepository } from '@test/repositories/in-memory-auditoria-log-repository'
 import { InMemoryColheitaRepository } from '@test/repositories/in-memory-colheita-repository'
 import { InMemoryEstoqueMovimentoRepository } from '@test/repositories/in-memory-estoque-movimento-repository'
 import { InMemoryEstoqueSaldoRepository } from '@test/repositories/in-memory-estoque-saldo-repository'
@@ -10,6 +11,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AjustarEstoqueUseCase } from './ajustar-estoque-use-case'
 
 import { UnexpectedError } from '@/core/errors/unexpected-error'
+import { RegistrarAuditoriaUseCase } from '@/domain/application/use-cases/auditoria/registrar-auditoria-use-case'
 import { EstoqueInsuficienteError } from '@/domain/application/use-cases/errors/estoque-insuficiente-error'
 import { LoteNotFoundError } from '@/domain/application/use-cases/errors/lote-not-found-error'
 import { MovimentoInvalidoError } from '@/domain/application/use-cases/errors/movimento-invalido-error'
@@ -20,6 +22,7 @@ describe(AjustarEstoqueUseCase.name, () => {
   let movimentoRepo: InMemoryEstoqueMovimentoRepository
   let saldoRepo: InMemoryEstoqueSaldoRepository
   let writeRepo: InMemoryEstoqueWriteRepository
+  let auditoriaRepo: InMemoryAuditoriaLogRepository
   let sut: AjustarEstoqueUseCase
 
   beforeEach(() => {
@@ -28,7 +31,13 @@ describe(AjustarEstoqueUseCase.name, () => {
     movimentoRepo = new InMemoryEstoqueMovimentoRepository()
     saldoRepo = new InMemoryEstoqueSaldoRepository()
     writeRepo = new InMemoryEstoqueWriteRepository(colheitaRepo, loteRepo, movimentoRepo, saldoRepo)
-    sut = new AjustarEstoqueUseCase(writeRepo, saldoRepo, loteRepo)
+    auditoriaRepo = new InMemoryAuditoriaLogRepository()
+    sut = new AjustarEstoqueUseCase(
+      writeRepo,
+      saldoRepo,
+      loteRepo,
+      new RegistrarAuditoriaUseCase(auditoriaRepo),
+    )
   })
 
   const baseInput = {
@@ -65,6 +74,33 @@ describe(AjustarEstoqueUseCase.name, () => {
       expect(result.value.movimento.motivo).toBe('recontagem')
       expect(result.value.saldo.quantidadeDisponivel).toBe(50)
     }
+  })
+
+  it('registra auditoria de ajuste no caminho feliz', async () => {
+    const result = await sut.execute({ ...baseInput, usuarioId: 'user-7' })
+
+    expect(result.isRight()).toBe(true)
+    expect(auditoriaRepo.logs).toHaveLength(1)
+    const log = auditoriaRepo.logs[0]
+    expect(log.entidade).toBe('estoque')
+    expect(log.acao).toBe('ajustar')
+    expect(log.usuarioId).toBe('user-7')
+    expect(log.dadosDepois).toMatchObject({
+      produtoId: 'produto-1',
+      delta: 50,
+      motivo: 'recontagem',
+      saldoAtual: 50,
+    })
+  })
+
+  it('não quebra a operação quando o registro de auditoria falha', async () => {
+    auditoriaRepo.shouldFailOnCreate = true
+
+    const result = await sut.execute(baseInput)
+
+    expect(result.isRight()).toBe(true)
+    expect(movimentoRepo.movimentos).toHaveLength(1)
+    expect(auditoriaRepo.logs).toHaveLength(0)
   })
 
   it('aplica ajuste negativo sobre saldo existente', async () => {

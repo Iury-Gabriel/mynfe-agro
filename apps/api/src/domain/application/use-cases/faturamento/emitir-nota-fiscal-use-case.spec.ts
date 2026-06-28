@@ -4,6 +4,7 @@ import { makePedido } from '@test/factories/make-pedido'
 import { makePedidoItem } from '@test/factories/make-pedido-item'
 import { makeProduto } from '@test/factories/make-produto'
 import { FakeFiscalProvider } from '@test/providers/fake-fiscal-provider'
+import { InMemoryAuditoriaLogRepository } from '@test/repositories/in-memory-auditoria-log-repository'
 import { InMemoryEmpresaRepository } from '@test/repositories/in-memory-empresa-repository'
 import { InMemoryNotaFiscalRepository } from '@test/repositories/in-memory-nota-fiscal-repository'
 import { InMemoryPedidoRepository } from '@test/repositories/in-memory-pedido-repository'
@@ -14,6 +15,7 @@ import { EmitirNotaFiscalUseCase } from './emitir-nota-fiscal-use-case'
 
 import { left } from '@/core/either'
 import { UnexpectedError } from '@/core/errors/unexpected-error'
+import { RegistrarAuditoriaUseCase } from '@/domain/application/use-cases/auditoria/registrar-auditoria-use-case'
 import { EmpresaNotFoundError } from '@/domain/application/use-cases/errors/empresa-not-found-error'
 import { NotaJaEmitidaError } from '@/domain/application/use-cases/errors/nota-ja-emitida-error'
 import { PedidoNaoFaturavelError } from '@/domain/application/use-cases/errors/pedido-nao-faturavel-error'
@@ -27,6 +29,7 @@ describe(EmitirNotaFiscalUseCase.name, () => {
   let pedidoRepo: InMemoryPedidoRepository
   let produtoRepo: InMemoryProdutoRepository
   let fiscalProvider: FakeFiscalProvider
+  let auditoriaRepo: InMemoryAuditoriaLogRepository
   let sut: EmitirNotaFiscalUseCase
 
   beforeEach(() => {
@@ -35,12 +38,14 @@ describe(EmitirNotaFiscalUseCase.name, () => {
     pedidoRepo = new InMemoryPedidoRepository()
     produtoRepo = new InMemoryProdutoRepository()
     fiscalProvider = new FakeFiscalProvider()
+    auditoriaRepo = new InMemoryAuditoriaLogRepository()
     sut = new EmitirNotaFiscalUseCase(
       notaRepo,
       empresaRepo,
       pedidoRepo,
       produtoRepo,
       fiscalProvider,
+      new RegistrarAuditoriaUseCase(auditoriaRepo),
     )
   })
 
@@ -102,6 +107,41 @@ describe(EmitirNotaFiscalUseCase.name, () => {
       expect(nota.valorTotal).toBe(500)
     }
     expect(fiscalProvider.emitirCalls).toHaveLength(1)
+  })
+
+  it('registra auditoria de emissão no caminho feliz', async () => {
+    await seed()
+
+    const result = await sut.execute({
+      tenantId: 'tenant-1',
+      empresaEmitenteId: 'empresa-1',
+      pedidoId: 'pedido-1',
+    })
+
+    expect(result.isRight()).toBe(true)
+    expect(auditoriaRepo.logs).toHaveLength(1)
+    const log = auditoriaRepo.logs[0]
+    expect(log.entidade).toBe('nota_fiscal')
+    expect(log.acao).toBe('emitir')
+    expect(log.dadosDepois).toMatchObject({
+      pedidoId: 'pedido-1',
+      empresaEmitenteId: 'empresa-1',
+      status: 'autorizada',
+    })
+  })
+
+  it('não quebra a emissão quando o registro de auditoria falha', async () => {
+    await seed()
+    auditoriaRepo.shouldFailOnCreate = true
+
+    const result = await sut.execute({
+      tenantId: 'tenant-1',
+      empresaEmitenteId: 'empresa-1',
+      pedidoId: 'pedido-1',
+    })
+
+    expect(result.isRight()).toBe(true)
+    expect(auditoriaRepo.logs).toHaveLength(0)
   })
 
   it('incrementa a numeração da empresa de forma persistida', async () => {

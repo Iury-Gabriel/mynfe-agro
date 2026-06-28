@@ -5,6 +5,7 @@ import type { Cliente, IndicadorIe, TipoPessoaCliente } from '@/domain/enterpris
 import { left, right, type Either } from '@/core/either'
 import { UnexpectedError } from '@/core/errors/unexpected-error'
 import { ClienteRepository } from '@/domain/application/repositories/cliente-repository'
+import { RegistrarAuditoriaUseCase } from '@/domain/application/use-cases/auditoria/registrar-auditoria-use-case'
 import { ClienteNotFoundError } from '@/domain/application/use-cases/errors/cliente-not-found-error'
 import { InvalidCnpjCpfError } from '@/domain/application/use-cases/errors/invalid-cnpj-cpf-error'
 import { CnpjCpf } from '@/domain/enterprise/entities/value-objects/cnpj-cpf'
@@ -41,7 +42,10 @@ type UpdateClienteResult = Either<
 
 @Injectable()
 export class UpdateClienteUseCase {
-  constructor(private readonly clientes: ClienteRepository) {}
+  constructor(
+    private readonly clientes: ClienteRepository,
+    private readonly registrarAuditoria: RegistrarAuditoriaUseCase,
+  ) {}
 
   async execute(input: UpdateClienteInput): Promise<UpdateClienteResult> {
     const cliente = await this.clientes.findById(input.clienteId, input.tenantId)
@@ -53,6 +57,8 @@ export class UpdateClienteUseCase {
       if (cnpjCpfResult.isLeft()) return left(cnpjCpfResult.value)
       cnpjCpf = cnpjCpfResult.value
     }
+
+    const dadosAntes = { razaoSocialNome: cliente.razaoSocialNome }
 
     cliente.updateCadastro({
       tipoPessoa: input.tipoPessoa,
@@ -79,6 +85,15 @@ export class UpdateClienteUseCase {
       console.error('[UpdateClienteUseCase] unexpected error:', err)
       return left(new UnexpectedError(err))
     }
+
+    await this.registrarAuditoria.execute({
+      tenantId: cliente.tenantId,
+      entidade: 'cliente',
+      entidadeId: cliente.id.toString(),
+      acao: 'editar',
+      dadosAntes,
+      dadosDepois: { razaoSocialNome: cliente.razaoSocialNome },
+    })
 
     return right({ cliente })
   }

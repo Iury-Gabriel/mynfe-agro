@@ -4,6 +4,7 @@ import { left, right, type Either } from '@/core/either'
 import { UnexpectedError } from '@/core/errors/unexpected-error'
 import { FiscalProvider } from '@/domain/application/ports/fiscal-provider'
 import { NotaFiscalRepository } from '@/domain/application/repositories/nota-fiscal-repository'
+import { RegistrarAuditoriaUseCase } from '@/domain/application/use-cases/auditoria/registrar-auditoria-use-case'
 import { NotaFiscalNotFoundError } from '@/domain/application/use-cases/errors/nota-fiscal-not-found-error'
 import { TransicaoFiscalInvalidaError } from '@/domain/application/use-cases/errors/transicao-fiscal-invalida-error'
 import { NotaFiscal } from '@/domain/enterprise/entities/nota-fiscal'
@@ -30,6 +31,7 @@ export class CancelarNotaFiscalUseCase {
   constructor(
     private readonly notas: NotaFiscalRepository,
     private readonly fiscalProvider: FiscalProvider,
+    private readonly registrarAuditoria: RegistrarAuditoriaUseCase,
   ) {}
 
   async execute(input: CancelarNotaFiscalInput): Promise<CancelarNotaFiscalResult> {
@@ -44,6 +46,7 @@ export class CancelarNotaFiscalUseCase {
         return left(new TransicaoFiscalInvalidaError(nota.status, 'cancelada'))
       }
 
+      const statusAntes = nota.status
       const now = new Date()
       const resultado = await this.fiscalProvider.cancelar(nota.plugnotasId ?? '')
 
@@ -56,6 +59,16 @@ export class CancelarNotaFiscalUseCase {
           data: now,
         })
         await this.notas.atualizarStatusComEvento({ nota, evento })
+
+        await this.registrarAuditoria.execute({
+          tenantId: input.tenantId,
+          entidade: 'nota_fiscal',
+          entidadeId: nota.id.toString(),
+          acao: 'editar',
+          dadosAntes: { status: statusAntes },
+          dadosDepois: { status: nota.status, cancelamento: 'rejeitado' },
+        })
+
         return right({ nota })
       }
 
@@ -72,6 +85,15 @@ export class CancelarNotaFiscalUseCase {
         data: now,
       })
       await this.notas.atualizarStatusComEvento({ nota, evento })
+
+      await this.registrarAuditoria.execute({
+        tenantId: input.tenantId,
+        entidade: 'nota_fiscal',
+        entidadeId: nota.id.toString(),
+        acao: 'editar',
+        dadosAntes: { status: statusAntes },
+        dadosDepois: { status: nota.status, motivo: input.motivo ?? null },
+      })
 
       return right({ nota })
     } catch (err) {
