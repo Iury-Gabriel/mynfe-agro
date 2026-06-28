@@ -6,13 +6,16 @@ import { ThrottlerStorageRedisService } from 'nestjs-throttler-storage-redis'
 import { AreasController } from './controllers/admin/areas.controller'
 import { AtividadesCampoController } from './controllers/admin/atividades-campo.controller'
 import { ColheitasController } from './controllers/admin/colheitas.controller'
+import { ConsolidacaoController } from './controllers/admin/consolidacao.controller'
 import { CustosProducaoController } from './controllers/admin/custos-producao.controller'
 import { EmbalagensController } from './controllers/admin/embalagens.controller'
 import { EmpresasController } from './controllers/admin/empresas.controller'
 import { EstoqueController } from './controllers/admin/estoque.controller'
 import { FazendasController } from './controllers/admin/fazendas.controller'
 import { LotesController } from './controllers/admin/lotes.controller'
+import { PedidosController } from './controllers/admin/pedidos.controller'
 import { ProdutosController } from './controllers/admin/produtos.controller'
+import { RemessasController } from './controllers/admin/remessas.controller'
 import { RolesController } from './controllers/admin/roles.controller'
 import { SafrasController } from './controllers/admin/safras.controller'
 import { TabelaPrecosController } from './controllers/admin/tabela-precos.controller'
@@ -80,6 +83,18 @@ import { ListUsersUseCase } from '@/domain/application/use-cases/users/list-user
 import { ReactivateUserUseCase } from '@/domain/application/use-cases/users/reactivate-user-use-case'
 import { SetUserPasswordUseCase } from '@/domain/application/use-cases/users/set-user-password-use-case'
 import { UpdateUserUseCase } from '@/domain/application/use-cases/users/update-user-use-case'
+import { CancelarPedidoUseCase } from '@/domain/application/use-cases/vendas/cancelar-pedido-use-case'
+import { CancelarRemessaUseCase } from '@/domain/application/use-cases/vendas/cancelar-remessa-use-case'
+import { ConfirmarPedidoUseCase } from '@/domain/application/use-cases/vendas/confirmar-pedido-use-case'
+import { ConsolidarRemessasUseCase } from '@/domain/application/use-cases/vendas/consolidar-remessas-use-case'
+import { CriarPedidoUseCase } from '@/domain/application/use-cases/vendas/criar-pedido-use-case'
+import { CriarRemessaUseCase } from '@/domain/application/use-cases/vendas/criar-remessa-use-case'
+import { GetPedidoUseCase } from '@/domain/application/use-cases/vendas/get-pedido-use-case'
+import { GetRemessaUseCase } from '@/domain/application/use-cases/vendas/get-remessa-use-case'
+import { ListPedidosUseCase } from '@/domain/application/use-cases/vendas/list-pedidos-use-case'
+import { ListRemessasUseCase } from '@/domain/application/use-cases/vendas/list-remessas-use-case'
+import { MarcarRemessaEntregueUseCase } from '@/domain/application/use-cases/vendas/marcar-remessa-entregue-use-case'
+import { PreviewConsolidacaoUseCase } from '@/domain/application/use-cases/vendas/preview-consolidacao-use-case'
 import { BetterAuthSetPasswordAdapter } from '@/infra/auth/better-auth-set-password.adapter'
 import { RedisService } from '@/infra/cache/redis/redis.service'
 import { CryptographyModule } from '@/infra/cryptography/cryptography.module'
@@ -126,6 +141,9 @@ import { EnvService } from '@/infra/env/env.service'
     EmbalagensController,
     LotesController,
     EstoqueController,
+    PedidosController,
+    RemessasController,
+    ConsolidacaoController,
   ],
   providers: [
     // Ordem dos APP_GUARD importa: Throttler → Auth → Permission → EmpresaAccess.
@@ -177,6 +195,18 @@ import { EnvService } from '@/infra/env/env.service'
     GetPosicaoEstoqueUseCase,
     ListMovimentacoesUseCase,
     AjustarEstoqueUseCase,
+    CriarPedidoUseCase,
+    ConfirmarPedidoUseCase,
+    CancelarPedidoUseCase,
+    ListPedidosUseCase,
+    GetPedidoUseCase,
+    CriarRemessaUseCase,
+    MarcarRemessaEntregueUseCase,
+    CancelarRemessaUseCase,
+    ListRemessasUseCase,
+    GetRemessaUseCase,
+    PreviewConsolidacaoUseCase,
+    ConsolidarRemessasUseCase,
     CreateRoleUseCase,
     UpdateRoleUseCase,
     DeleteRoleUseCase,

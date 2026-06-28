@@ -6,6 +6,7 @@ import type {
   RegistrarAjusteArgs,
   RegistrarColheitaArgs,
   RegistrarEmbalagemArgs,
+  RegistrarSaidaVendaArgs,
 } from '@/domain/application/repositories/estoque-write-repository'
 import type { EstoqueSaldo } from '@/domain/enterprise/entities/estoque-saldo'
 import type { Lote } from '@/domain/enterprise/entities/lote'
@@ -56,5 +57,12 @@ export class InMemoryEstoqueWriteRepository extends EstoqueWriteRepository {
     this.movimentos.movimentos.push(args.movimento)
     this.upsertSaldo(args.saldo)
     if (args.lote) this.upsertLote(args.lote)
+  }
+
+  async registrarSaidaVenda(args: RegistrarSaidaVendaArgs): Promise<void> {
+    if (this.shouldFail) throw new Error('transaction failed')
+    for (const saldo of args.saldos) this.upsertSaldo(saldo)
+    for (const movimento of args.movimentos) this.movimentos.movimentos.push(movimento)
+    for (const lote of args.lotes) this.upsertLote(lote)
   }
 }

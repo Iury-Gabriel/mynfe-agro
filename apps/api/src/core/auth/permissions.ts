@@ -43,6 +43,15 @@ export const PERMISSIONS = [
   'estoque:read',
   'estoque:ajuste',
   'embalagem:create',
+  'pedido:read',
+  'pedido:create',
+  'pedido:confirm',
+  'pedido:cancel',
+  'remessa:read',
+  'remessa:create',
+  'remessa:update',
+  'remessa:cancel',
+  'consolidacao:create',
 ] as const
 
 export type Permission = (typeof PERMISSIONS)[number]
@@ -103,6 +112,15 @@ export const ROLE_PERMISSIONS = {
     'estoque:read',
     'estoque:ajuste',
     'embalagem:create',
+    'pedido:read',
+    'pedido:create',
+    'pedido:confirm',
+    'pedido:cancel',
+    'remessa:read',
+    'remessa:create',
+    'remessa:update',
+    'remessa:cancel',
+    'consolidacao:create',
   ],
   'Operador de Campo': [
     'view:dashboard',
@@ -139,6 +157,15 @@ export const ROLE_PERMISSIONS = {
     'preco:delete',
     'lote:read',
     'estoque:read',
+    'pedido:read',
+    'pedido:create',
+    'pedido:confirm',
+    'pedido:cancel',
+    'remessa:read',
+    'remessa:create',
+    'remessa:update',
+    'remessa:cancel',
+    'consolidacao:create',
   ],
   Faturista: [
     'view:dashboard',
@@ -147,6 +174,8 @@ export const ROLE_PERMISSIONS = {
     'produto:read',
     'lote:read',
     'estoque:read',
+    'pedido:read',
+    'remessa:read',
   ],
 } as const satisfies Record<RoleName, readonly Permission[]>
 

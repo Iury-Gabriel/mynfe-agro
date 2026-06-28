@@ -10,6 +10,7 @@ import type {
   RegistrarAjusteArgs,
   RegistrarColheitaArgs,
   RegistrarEmbalagemArgs,
+  RegistrarSaidaVendaArgs,
 } from '@/domain/application/repositories/estoque-write-repository'
 import type { EstoqueSaldo } from '@/domain/enterprise/entities/estoque-saldo'
 import type { Prisma } from '@prisma/client'
@@ -95,6 +96,22 @@ export class PrismaEstoqueWriteRepository extends EstoqueWriteRepository {
       })
       await upsertSaldo(tx, args.saldo)
       await upsertLote(tx, args.lote)
+    })
+  }
+
+  async registrarSaidaVenda(args: RegistrarSaidaVendaArgs): Promise<void> {
+    await this.prisma.$transaction(async (tx) => {
+      for (const saldo of args.saldos) {
+        await upsertSaldo(tx, saldo)
+      }
+      for (const movimento of args.movimentos) {
+        await tx.estoqueMovimento.create({
+          data: PrismaEstoqueMovimentoMapper.toPrismaCreate(movimento),
+        })
+      }
+      for (const lote of args.lotes) {
+        await upsertLote(tx, lote)
+      }
     })
   }
 }

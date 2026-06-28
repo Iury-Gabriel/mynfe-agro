@@ -66,6 +66,9 @@ describe('router wiring', () => {
           'estoque:read',
           'lote:read',
           'colheita:read',
+          'pedido:read',
+          'remessa:read',
+          'consolidacao:create',
         ],
       },
     })

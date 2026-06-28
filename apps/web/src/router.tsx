@@ -220,6 +220,28 @@ export const router = createBrowserRouter([
         loader: () => requirePermission('colheita:read'),
       },
       {
+        path: 'vendas/pedidos',
+        lazy: () =>
+          import('@/features/vendas/pages/pedidos-page').then((m) => ({ Component: m.PedidosPage })),
+        loader: () => requirePermission('pedido:read'),
+      },
+      {
+        path: 'vendas/remessas',
+        lazy: () =>
+          import('@/features/vendas/pages/remessas-page').then((m) => ({
+            Component: m.RemessasPage,
+          })),
+        loader: () => requirePermission('remessa:read'),
+      },
+      {
+        path: 'vendas/consolidacao',
+        lazy: () =>
+          import('@/features/vendas/pages/consolidacao-page').then((m) => ({
+            Component: m.ConsolidacaoPage,
+          })),
+        loader: () => requirePermission('consolidacao:create'),
+      },
+      {
         path: 'admin/roles',
         lazy: () =>
           import('@/features/admin/pages/roles-page').then((m) => ({ Component: m.RolesPage })),

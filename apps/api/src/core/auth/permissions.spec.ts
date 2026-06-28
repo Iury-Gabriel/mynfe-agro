@@ -54,10 +54,34 @@ describe('PERMISSIONS', () => {
     expect(PERMISSIONS).toContain('embalagem:create')
   })
 
-  it('tem exatamente 44 permissões', () => {
-    expect(PERMISSIONS).toHaveLength(44)
+  it('contém as permissões de vendas (pedido, remessa & consolidação)', () => {
+    expect(PERMISSIONS).toContain('pedido:read')
+    expect(PERMISSIONS).toContain('pedido:create')
+    expect(PERMISSIONS).toContain('pedido:confirm')
+    expect(PERMISSIONS).toContain('pedido:cancel')
+    expect(PERMISSIONS).toContain('remessa:read')
+    expect(PERMISSIONS).toContain('remessa:create')
+    expect(PERMISSIONS).toContain('remessa:update')
+    expect(PERMISSIONS).toContain('remessa:cancel')
+    expect(PERMISSIONS).toContain('consolidacao:create')
+  })
+
+  it('tem exatamente 53 permissões', () => {
+    expect(PERMISSIONS).toHaveLength(53)
   })
 })
+
+const VENDAS_PERMISSIONS = [
+  'pedido:read',
+  'pedido:create',
+  'pedido:confirm',
+  'pedido:cancel',
+  'remessa:read',
+  'remessa:create',
+  'remessa:update',
+  'remessa:cancel',
+  'consolidacao:create',
+] as const
 
 const ESTOQUE_PERMISSIONS = [
   'colheita:read',
@@ -150,6 +174,32 @@ describe('ROLE_PERMISSIONS', () => {
       expect(ROLE_PERMISSIONS[role]).not.toContain('estoque:ajuste')
       expect(ROLE_PERMISSIONS[role]).not.toContain('colheita:create')
       expect(ROLE_PERMISSIONS[role]).not.toContain('embalagem:create')
+    }
+  })
+
+  it('Gestor recebe todas as permissões de vendas', () => {
+    for (const p of VENDAS_PERMISSIONS) {
+      expect(ROLE_PERMISSIONS.Gestor).toContain(p)
+    }
+  })
+
+  it('Vendedor recebe todas as permissões de vendas', () => {
+    for (const p of VENDAS_PERMISSIONS) {
+      expect(ROLE_PERMISSIONS.Vendedor).toContain(p)
+    }
+  })
+
+  it('Faturista recebe apenas leitura de pedidos e remessas', () => {
+    expect(ROLE_PERMISSIONS.Faturista).toContain('pedido:read')
+    expect(ROLE_PERMISSIONS.Faturista).toContain('remessa:read')
+    expect(ROLE_PERMISSIONS.Faturista).not.toContain('pedido:create')
+    expect(ROLE_PERMISSIONS.Faturista).not.toContain('remessa:create')
+    expect(ROLE_PERMISSIONS.Faturista).not.toContain('consolidacao:create')
+  })
+
+  it('Operador de Campo não recebe nenhuma permissão de vendas', () => {
+    for (const p of VENDAS_PERMISSIONS) {
+      expect(ROLE_PERMISSIONS['Operador de Campo']).not.toContain(p)
     }
   })
 

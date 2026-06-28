@@ -22,8 +22,15 @@ export interface RegistrarAjusteArgs {
   lote: Lote | null
 }
 
+export interface RegistrarSaidaVendaArgs {
+  movimentos: EstoqueMovimento[]
+  saldos: EstoqueSaldo[]
+  lotes: Lote[]
+}
+
 export abstract class EstoqueWriteRepository {
   abstract registrarColheita(args: RegistrarColheitaArgs): Promise<void>
   abstract registrarEmbalagem(args: RegistrarEmbalagemArgs): Promise<void>
   abstract registrarAjuste(args: RegistrarAjusteArgs): Promise<void>
+  abstract registrarSaidaVenda(args: RegistrarSaidaVendaArgs): Promise<void>
 }

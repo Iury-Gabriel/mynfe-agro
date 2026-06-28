@@ -36,6 +36,10 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     passWithNoTests: true,
+    // Suíte grande (>1300 specs); a compilação do TestingModule do Nest nos hooks
+    // pode passar de 10s sob carga de CPU. Folga p/ evitar timeout flaky no gate.
+    testTimeout: 30_000,
+    hookTimeout: 30_000,
     include: ['src/**/*.spec.ts'],
     exclude: ['**/node_modules/**', '**/dist/**', '**/*.e2e-spec.ts'],
     coverage: {
