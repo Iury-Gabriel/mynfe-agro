@@ -3,15 +3,18 @@ import { Global, Module } from '@nestjs/common'
 import { PrismaService } from './prisma/prisma.service'
 import { PrismaAreaRepository } from './prisma/repositories/prisma-area-repository'
 import { PrismaAtividadeCampoRepository } from './prisma/repositories/prisma-atividade-campo-repository'
+import { PrismaAuditoriaLogRepository } from './prisma/repositories/prisma-auditoria-log-repository'
 import { PrismaClienteRepository } from './prisma/repositories/prisma-cliente-repository'
 import { PrismaColheitaRepository } from './prisma/repositories/prisma-colheita-repository'
 import { PrismaCustoProducaoRepository } from './prisma/repositories/prisma-custo-producao-repository'
+import { PrismaDashboardRepository } from './prisma/repositories/prisma-dashboard-repository'
 import { PrismaEmpresaRepository } from './prisma/repositories/prisma-empresa-repository'
 import { PrismaEstoqueMovimentoRepository } from './prisma/repositories/prisma-estoque-movimento-repository'
 import { PrismaEstoqueSaldoRepository } from './prisma/repositories/prisma-estoque-saldo-repository'
 import { PrismaEstoqueWriteRepository } from './prisma/repositories/prisma-estoque-write-repository'
 import { PrismaFazendaRepository } from './prisma/repositories/prisma-fazenda-repository'
 import { PrismaLoteRepository } from './prisma/repositories/prisma-lote-repository'
+import { PrismaNotaFiscalRepository } from './prisma/repositories/prisma-nota-fiscal-repository'
 import { PrismaPedidoRepository } from './prisma/repositories/prisma-pedido-repository'
 import { PrismaProdutoRepository } from './prisma/repositories/prisma-produto-repository'
 import { PrismaRemessaRepository } from './prisma/repositories/prisma-remessa-repository'
@@ -25,15 +28,18 @@ import { PrismaVendaWriteRepository } from './prisma/repositories/prisma-venda-w
 
 import { AreaRepository } from '@/domain/application/repositories/area-repository'
 import { AtividadeCampoRepository } from '@/domain/application/repositories/atividade-campo-repository'
+import { AuditoriaLogRepository } from '@/domain/application/repositories/auditoria-log-repository'
 import { ClienteRepository } from '@/domain/application/repositories/cliente-repository'
 import { ColheitaRepository } from '@/domain/application/repositories/colheita-repository'
 import { CustoProducaoRepository } from '@/domain/application/repositories/custo-producao-repository'
+import { DashboardRepository } from '@/domain/application/repositories/dashboard-repository'
 import { EmpresaRepository } from '@/domain/application/repositories/empresa-repository'
 import { EstoqueMovimentoRepository } from '@/domain/application/repositories/estoque-movimento-repository'
 import { EstoqueSaldoRepository } from '@/domain/application/repositories/estoque-saldo-repository'
 import { EstoqueWriteRepository } from '@/domain/application/repositories/estoque-write-repository'
 import { FazendaRepository } from '@/domain/application/repositories/fazenda-repository'
 import { LoteRepository } from '@/domain/application/repositories/lote-repository'
+import { NotaFiscalRepository } from '@/domain/application/repositories/nota-fiscal-repository'
 import { PedidoRepository } from '@/domain/application/repositories/pedido-repository'
 import { ProdutoRepository } from '@/domain/application/repositories/produto-repository'
 import { RemessaRepository } from '@/domain/application/repositories/remessa-repository'
@@ -70,6 +76,9 @@ import { VendaWriteRepository } from '@/domain/application/repositories/venda-wr
     { provide: PedidoRepository, useClass: PrismaPedidoRepository },
     { provide: RemessaRepository, useClass: PrismaRemessaRepository },
     { provide: VendaWriteRepository, useClass: PrismaVendaWriteRepository },
+    { provide: NotaFiscalRepository, useClass: PrismaNotaFiscalRepository },
+    { provide: DashboardRepository, useClass: PrismaDashboardRepository },
+    { provide: AuditoriaLogRepository, useClass: PrismaAuditoriaLogRepository },
   ],
   exports: [
     PrismaService,
@@ -94,6 +103,9 @@ import { VendaWriteRepository } from '@/domain/application/repositories/venda-wr
     PedidoRepository,
     RemessaRepository,
     VendaWriteRepository,
+    NotaFiscalRepository,
+    DashboardRepository,
+    AuditoriaLogRepository,
   ],
 })
 export class DatabaseModule {}

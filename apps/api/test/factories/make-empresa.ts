@@ -22,6 +22,7 @@ export interface MakeEmpresaOverrides {
   crt?: string
   ambienteFiscal?: AmbienteFiscal
   serieNfe?: number | null
+  proximaNumeracaoNfe?: number
   status?: EmpresaStatus
   endereco?: Partial<EmpresaEndereco>
   createdAt?: Date
@@ -49,6 +50,7 @@ export function makeEmpresa(overrides: MakeEmpresaOverrides = {}): Empresa {
       crt: overrides.crt ?? '1',
       ambienteFiscal: overrides.ambienteFiscal ?? 'homologacao',
       serieNfe: overrides.serieNfe ?? null,
+      proximaNumeracaoNfe: overrides.proximaNumeracaoNfe ?? 1,
       status: overrides.status ?? 'ativo',
       endereco: overrides.endereco,
       createdAt: overrides.createdAt ?? new Date('2024-01-01'),

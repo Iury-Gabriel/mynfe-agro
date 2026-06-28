@@ -1,6 +1,6 @@
+import { makePedidoItem } from '@test/factories/make-pedido-item'
 import { describe, expect, it } from 'vitest'
 
-import { makePedidoItem } from '@test/factories/make-pedido-item'
 
 import { PedidoItem } from './pedido-item'
 

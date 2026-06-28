@@ -111,6 +111,7 @@ describe(Empresa.name, () => {
     expect(sut.inscricaoEstadual).toBeNull()
     expect(sut.ieProdutorRural).toBeNull()
     expect(sut.serieNfe).toBeNull()
+    expect(sut.proximaNumeracaoNfe).toBe(1)
     expect(sut.status).toBe('ativo')
     expect(sut.deletedAt).toBeNull()
     expect(sut.endereco).toEqual({
@@ -186,6 +187,41 @@ describe(Empresa.name, () => {
 
       expect(sut.status).toBe('inativo')
       expect(sut.updatedAt.getTime()).toBeGreaterThan(before.getTime())
+    })
+  })
+
+  describe('reservarNumeracaoNfe()', () => {
+    it('retorna a numeração atual e incrementa a próxima', () => {
+      const before = new Date('2024-01-01')
+      const sut = Empresa.create({
+        tenantId: 'tenant-1',
+        tipoPessoa: 'PJ',
+        razaoSocial: 'Agro LTDA',
+        cnpjCpf: validCnpjCpf(),
+        regimeTributario: 'simples_nacional',
+        crt: '1',
+        ambienteFiscal: 'homologacao',
+        proximaNumeracaoNfe: 10,
+        createdAt: before,
+        updatedAt: before,
+      })
+
+      const numero = sut.reservarNumeracaoNfe()
+
+      expect(numero).toBe(10)
+      expect(sut.proximaNumeracaoNfe).toBe(11)
+      expect(sut.updatedAt.getTime()).toBeGreaterThan(before.getTime())
+    })
+
+    it('reserva sequencialmente em chamadas consecutivas', () => {
+      const sut = makeEmpresaFull()
+
+      const primeiro = sut.reservarNumeracaoNfe()
+      const segundo = sut.reservarNumeracaoNfe()
+
+      expect(primeiro).toBe(1)
+      expect(segundo).toBe(2)
+      expect(sut.proximaNumeracaoNfe).toBe(3)
     })
   })
 

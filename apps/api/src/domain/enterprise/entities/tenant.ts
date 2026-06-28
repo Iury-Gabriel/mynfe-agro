@@ -59,6 +59,11 @@ export class Tenant extends AggregateRoot<TenantProps> {
     this.touch()
   }
 
+  setDiaCorteConsolidacao(diaCorteConsolidacao: number | null): void {
+    this.props.diaCorteConsolidacao = diaCorteConsolidacao
+    this.touch()
+  }
+
   suspend(): void {
     this.props.status = 'suspenso'
     this.touch()

@@ -66,10 +66,22 @@ describe('PERMISSIONS', () => {
     expect(PERMISSIONS).toContain('consolidacao:create')
   })
 
-  it('tem exatamente 53 permissões', () => {
-    expect(PERMISSIONS).toHaveLength(53)
+  it('contém as permissões de nota fiscal', () => {
+    expect(PERMISSIONS).toContain('nota:read')
+    expect(PERMISSIONS).toContain('nota:emitir')
+    expect(PERMISSIONS).toContain('nota:cancelar')
+  })
+
+  it('contém a permissão de auditoria', () => {
+    expect(PERMISSIONS).toContain('auditoria:read')
+  })
+
+  it('tem exatamente 57 permissões', () => {
+    expect(PERMISSIONS).toHaveLength(57)
   })
 })
+
+const NOTA_PERMISSIONS = ['nota:read', 'nota:emitir', 'nota:cancelar'] as const
 
 const VENDAS_PERMISSIONS = [
   'pedido:read',
@@ -111,6 +123,19 @@ describe('ROLE_PERMISSIONS', () => {
     expect(ROLE_PERMISSIONS.Gestor).toContain('empresa:update')
     expect(ROLE_PERMISSIONS.Gestor).not.toContain('admin:users')
     expect(ROLE_PERMISSIONS.Gestor).not.toContain('admin:roles')
+  })
+
+  it('Gestor recebe configurações do tenant e auditoria', () => {
+    expect(ROLE_PERMISSIONS.Gestor).toContain('view:settings')
+    expect(ROLE_PERMISSIONS.Gestor).toContain('manage:settings')
+    expect(ROLE_PERMISSIONS.Gestor).toContain('auditoria:read')
+  })
+
+  it('papéis operacionais não recebem configurações nem auditoria', () => {
+    for (const role of ['Operador de Campo', 'Vendedor', 'Faturista'] as const) {
+      expect(ROLE_PERMISSIONS[role]).not.toContain('manage:settings')
+      expect(ROLE_PERMISSIONS[role]).not.toContain('auditoria:read')
+    }
   })
 
   it('papéis operacionais têm apenas leitura de empresa', () => {
@@ -195,6 +220,30 @@ describe('ROLE_PERMISSIONS', () => {
     expect(ROLE_PERMISSIONS.Faturista).not.toContain('pedido:create')
     expect(ROLE_PERMISSIONS.Faturista).not.toContain('remessa:create')
     expect(ROLE_PERMISSIONS.Faturista).not.toContain('consolidacao:create')
+  })
+
+  it('Gestor recebe todas as permissões de nota fiscal', () => {
+    for (const p of NOTA_PERMISSIONS) {
+      expect(ROLE_PERMISSIONS.Gestor).toContain(p)
+    }
+  })
+
+  it('Faturista recebe todas as permissões de nota fiscal', () => {
+    for (const p of NOTA_PERMISSIONS) {
+      expect(ROLE_PERMISSIONS.Faturista).toContain(p)
+    }
+  })
+
+  it('Vendedor recebe apenas leitura de nota fiscal', () => {
+    expect(ROLE_PERMISSIONS.Vendedor).toContain('nota:read')
+    expect(ROLE_PERMISSIONS.Vendedor).not.toContain('nota:emitir')
+    expect(ROLE_PERMISSIONS.Vendedor).not.toContain('nota:cancelar')
+  })
+
+  it('Operador de Campo não recebe nenhuma permissão de nota fiscal', () => {
+    for (const p of NOTA_PERMISSIONS) {
+      expect(ROLE_PERMISSIONS['Operador de Campo']).not.toContain(p)
+    }
   })
 
   it('Operador de Campo não recebe nenhuma permissão de vendas', () => {

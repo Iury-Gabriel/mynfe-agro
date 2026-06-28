@@ -1,6 +1,6 @@
+import { makeRemessaItem } from '@test/factories/make-remessa-item'
 import { describe, expect, it } from 'vitest'
 
-import { makeRemessaItem } from '@test/factories/make-remessa-item'
 
 import { RemessaItem } from './remessa-item'
 

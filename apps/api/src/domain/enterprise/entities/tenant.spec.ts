@@ -87,6 +87,26 @@ describe(Tenant.name, () => {
     })
   })
 
+  describe('setDiaCorteConsolidacao()', () => {
+    it('atualiza o dia de corte e o updatedAt', () => {
+      const before = new Date('2024-01-01')
+      const sut = Tenant.create(makeTenantProps({ diaCorteConsolidacao: 5, updatedAt: before }))
+
+      sut.setDiaCorteConsolidacao(15)
+
+      expect(sut.diaCorteConsolidacao).toBe(15)
+      expect(sut.updatedAt.getTime()).toBeGreaterThan(before.getTime())
+    })
+
+    it('aceita null para limpar o dia de corte', () => {
+      const sut = Tenant.create(makeTenantProps({ diaCorteConsolidacao: 5 }))
+
+      sut.setDiaCorteConsolidacao(null)
+
+      expect(sut.diaCorteConsolidacao).toBeNull()
+    })
+  })
+
   describe('suspend()', () => {
     it('define status suspenso e atualiza updatedAt', () => {
       const before = new Date('2024-01-01')

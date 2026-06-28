@@ -9,6 +9,7 @@ import { RoleInUseError } from './role-in-use-error'
 import { RoleIsSystemError } from './role-is-system-error'
 import { RoleNameTakenError } from './role-name-taken-error'
 import { RoleNotFoundError } from './role-not-found-error'
+import { TenantNotFoundError } from './tenant-not-found-error'
 import { UserNotFoundError } from './user-not-found-error'
 
 describe('RoleNameTakenError', () => {
@@ -103,6 +104,16 @@ describe('EmpresaNotFoundError', () => {
 
     expect(sut.kind).toBe('EmpresaNotFound')
     expect(sut.message).toBe('Empresa não encontrada.')
+    expect(sut).toBeInstanceOf(Error)
+  })
+})
+
+describe('TenantNotFoundError', () => {
+  it('tem kind correto e mensagem', () => {
+    const sut = new TenantNotFoundError()
+
+    expect(sut.kind).toBe('TenantNotFound')
+    expect(sut.message).toBe('Tenant não encontrado.')
     expect(sut).toBeInstanceOf(Error)
   })
 })

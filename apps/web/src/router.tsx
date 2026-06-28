@@ -132,6 +132,14 @@ export const router = createBrowserRouter([
     loader: privateLoader,
     children: [
       {
+        index: true,
+        lazy: () =>
+          import('@/features/dashboard/pages/dashboard-home-page').then((m) => ({
+            Component: m.DashboardHomePage,
+          })),
+        loader: () => requirePermission('view:dashboard'),
+      },
+      {
         path: 'empresas',
         lazy: () =>
           import('@/features/admin/pages/empresas-page').then((m) => ({
@@ -240,6 +248,38 @@ export const router = createBrowserRouter([
             Component: m.ConsolidacaoPage,
           })),
         loader: () => requirePermission('consolidacao:create'),
+      },
+      {
+        path: 'fila-faturamento',
+        lazy: () =>
+          import('@/features/fiscal/pages/fila-faturamento-page').then((m) => ({
+            Component: m.FilaFaturamentoPage,
+          })),
+        loader: () => requirePermission('nota:read'),
+      },
+      {
+        path: 'notas-fiscais',
+        lazy: () =>
+          import('@/features/fiscal/pages/notas-fiscais-page').then((m) => ({
+            Component: m.NotasFiscaisPage,
+          })),
+        loader: () => requirePermission('nota:read'),
+      },
+      {
+        path: 'configuracoes',
+        lazy: () =>
+          import('@/features/admin/pages/configuracoes-page').then((m) => ({
+            Component: m.ConfiguracoesPage,
+          })),
+        loader: () => requirePermission('view:settings'),
+      },
+      {
+        path: 'auditoria',
+        lazy: () =>
+          import('@/features/admin/pages/auditoria-page').then((m) => ({
+            Component: m.AuditoriaPage,
+          })),
+        loader: () => requirePermission('auditoria:read'),
       },
       {
         path: 'admin/roles',

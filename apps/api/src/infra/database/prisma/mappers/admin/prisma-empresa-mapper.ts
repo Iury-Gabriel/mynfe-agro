@@ -35,6 +35,7 @@ export class PrismaEmpresaMapper {
         crt: raw.crt,
         ambienteFiscal: raw.ambienteFiscal as AmbienteFiscal,
         serieNfe: parseSerieNfe(raw.serieNfe),
+        proximaNumeracaoNfe: Number(raw.proximaNumeracaoNfe),
         status: raw.status as EmpresaStatus,
         endereco: {
           logradouro: raw.enderecoLogradouro,
@@ -67,6 +68,7 @@ export class PrismaEmpresaMapper {
       crt: empresa.crt,
       ambienteFiscal: empresa.ambienteFiscal,
       serieNfe: empresa.serieNfe === null ? null : String(empresa.serieNfe),
+      proximaNumeracaoNfe: BigInt(empresa.proximaNumeracaoNfe),
       status: empresa.status,
       enderecoLogradouro: empresa.endereco.logradouro,
       enderecoNumero: empresa.endereco.numero,
@@ -93,6 +95,7 @@ export class PrismaEmpresaMapper {
       crt: empresa.crt,
       ambienteFiscal: empresa.ambienteFiscal,
       serieNfe: empresa.serieNfe === null ? null : String(empresa.serieNfe),
+      proximaNumeracaoNfe: BigInt(empresa.proximaNumeracaoNfe),
       status: empresa.status,
       enderecoLogradouro: empresa.endereco.logradouro,
       enderecoNumero: empresa.endereco.numero,

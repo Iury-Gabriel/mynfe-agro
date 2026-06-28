@@ -59,6 +59,7 @@ describe('PrismaEmpresaMapper', () => {
       expect(empresa.crt).toBe('1')
       expect(empresa.ambienteFiscal).toBe('homologacao')
       expect(empresa.serieNfe).toBe(2)
+      expect(empresa.proximaNumeracaoNfe).toBe(1)
       expect(empresa.status).toBe('ativo')
       expect(empresa.endereco).toEqual({
         logradouro: 'Rua A',
@@ -77,6 +78,11 @@ describe('PrismaEmpresaMapper', () => {
     it('mapeia serieNfe null para null', () => {
       const empresa = PrismaEmpresaMapper.toDomain(makePrismaRow({ serieNfe: null }))
       expect(empresa.serieNfe).toBeNull()
+    })
+
+    it('converte proximaNumeracaoNfe BigInt para number', () => {
+      const empresa = PrismaEmpresaMapper.toDomain(makePrismaRow({ proximaNumeracaoNfe: 42n }))
+      expect(empresa.proximaNumeracaoNfe).toBe(42)
     })
 
     it('mapeia serieNfe não-numérica para null', () => {
@@ -122,6 +128,12 @@ describe('PrismaEmpresaMapper', () => {
       const data = PrismaEmpresaMapper.toPrismaCreate(empresa)
       expect(data.serieNfe).toBeNull()
     })
+
+    it('serializa proximaNumeracaoNfe como BigInt', () => {
+      const empresa = makeEmpresa({ proximaNumeracaoNfe: 7 })
+      const data = PrismaEmpresaMapper.toPrismaCreate(empresa)
+      expect(data.proximaNumeracaoNfe).toBe(7n)
+    })
   })
 
   describe('toPrismaUpdate', () => {
@@ -140,6 +152,12 @@ describe('PrismaEmpresaMapper', () => {
       const empresa = makeEmpresa({ serieNfe: null })
       const data = PrismaEmpresaMapper.toPrismaUpdate(empresa)
       expect(data.serieNfe).toBeNull()
+    })
+
+    it('serializa proximaNumeracaoNfe como BigInt no update', () => {
+      const empresa = makeEmpresa({ proximaNumeracaoNfe: 9 })
+      const data = PrismaEmpresaMapper.toPrismaUpdate(empresa)
+      expect(data.proximaNumeracaoNfe).toBe(9n)
     })
   })
 })

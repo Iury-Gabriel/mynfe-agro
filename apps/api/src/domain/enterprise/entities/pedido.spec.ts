@@ -1,7 +1,7 @@
-import { describe, expect, it } from 'vitest'
 
 import { makePedido } from '@test/factories/make-pedido'
 import { makePedidoItem } from '@test/factories/make-pedido-item'
+import { describe, expect, it } from 'vitest'
 
 import { Pedido } from './pedido'
 

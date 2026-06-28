@@ -52,6 +52,10 @@ export const PERMISSIONS = [
   'remessa:update',
   'remessa:cancel',
   'consolidacao:create',
+  'nota:read',
+  'nota:emitir',
+  'nota:cancelar',
+  'auditoria:read',
 ] as const
 
 export type Permission = (typeof PERMISSIONS)[number]
@@ -73,6 +77,8 @@ export const ROLE_PERMISSIONS = {
   Gestor: [
     'view:dashboard',
     'view:settings',
+    'manage:settings',
+    'auditoria:read',
     'empresa:read',
     'empresa:create',
     'empresa:update',
@@ -121,6 +127,9 @@ export const ROLE_PERMISSIONS = {
     'remessa:update',
     'remessa:cancel',
     'consolidacao:create',
+    'nota:read',
+    'nota:emitir',
+    'nota:cancelar',
   ],
   'Operador de Campo': [
     'view:dashboard',
@@ -166,6 +175,7 @@ export const ROLE_PERMISSIONS = {
     'remessa:update',
     'remessa:cancel',
     'consolidacao:create',
+    'nota:read',
   ],
   Faturista: [
     'view:dashboard',
@@ -176,6 +186,9 @@ export const ROLE_PERMISSIONS = {
     'estoque:read',
     'pedido:read',
     'remessa:read',
+    'nota:read',
+    'nota:emitir',
+    'nota:cancelar',
   ],
 } as const satisfies Record<RoleName, readonly Permission[]>
 

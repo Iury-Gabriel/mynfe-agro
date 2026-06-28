@@ -37,6 +37,7 @@ export interface EmpresaProps {
   crt: string
   ambienteFiscal: AmbienteFiscal
   serieNfe: number | null
+  proximaNumeracaoNfe: number
   status: EmpresaStatus
   endereco: EmpresaEndereco
   createdAt: Date
@@ -112,6 +113,10 @@ export class Empresa extends AggregateRoot<EmpresaProps> {
     return this.props.serieNfe
   }
 
+  get proximaNumeracaoNfe() {
+    return this.props.proximaNumeracaoNfe
+  }
+
   get status() {
     return this.props.status
   }
@@ -146,6 +151,13 @@ export class Empresa extends AggregateRoot<EmpresaProps> {
     this.touch()
   }
 
+  reservarNumeracaoNfe(): number {
+    const numero = this.props.proximaNumeracaoNfe
+    this.props.proximaNumeracaoNfe = numero + 1
+    this.touch()
+    return numero
+  }
+
   updateCadastro(input: UpdateEmpresaCadastro): void {
     if (input.razaoSocial !== undefined) this.props.razaoSocial = input.razaoSocial
     if (input.nomeFantasia !== undefined) this.props.nomeFantasia = input.nomeFantasia
@@ -165,12 +177,20 @@ export class Empresa extends AggregateRoot<EmpresaProps> {
   static create(
     props: Omit<
       EmpresaProps,
-      'nomeFantasia' | 'inscricaoEstadual' | 'ieProdutorRural' | 'serieNfe' | 'status' | 'endereco' | 'deletedAt'
+      | 'nomeFantasia'
+      | 'inscricaoEstadual'
+      | 'ieProdutorRural'
+      | 'serieNfe'
+      | 'proximaNumeracaoNfe'
+      | 'status'
+      | 'endereco'
+      | 'deletedAt'
     > & {
       nomeFantasia?: string | null
       inscricaoEstadual?: string | null
       ieProdutorRural?: string | null
       serieNfe?: number | null
+      proximaNumeracaoNfe?: number
       status?: EmpresaStatus
       endereco?: Partial<EmpresaEndereco>
       deletedAt?: Date | null
@@ -184,6 +204,7 @@ export class Empresa extends AggregateRoot<EmpresaProps> {
         inscricaoEstadual: props.inscricaoEstadual ?? null,
         ieProdutorRural: props.ieProdutorRural ?? null,
         serieNfe: props.serieNfe ?? null,
+        proximaNumeracaoNfe: props.proximaNumeracaoNfe ?? 1,
         status: props.status ?? 'ativo',
         endereco: { ...EMPTY_ENDERECO, ...props.endereco },
         deletedAt: props.deletedAt ?? null,
