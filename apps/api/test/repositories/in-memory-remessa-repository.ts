@@ -1,5 +1,8 @@
 import type { PaginationParams } from '@/core/repositories/pagination-params'
-import type { RemessaFiltros } from '@/domain/application/repositories/remessa-repository'
+import type {
+  RemessaFiltros,
+  RemessaItemConsumo,
+} from '@/domain/application/repositories/remessa-repository'
 import type { Remessa } from '@/domain/enterprise/entities/remessa'
 
 import { normalizePagination } from '@/core/repositories/pagination-params'
@@ -22,11 +25,33 @@ function matchesFiltros(remessa: Remessa, filtros: RemessaFiltros): boolean {
 
 export class InMemoryRemessaRepository extends RemessaRepository {
   remessas: Remessa[] = []
+  clienteNomes: Record<string, string> = {}
   shouldFailOnCreate = false
   shouldFailOnSave = false
 
   async findById(id: string, tenantId: string): Promise<Remessa | null> {
     return this.remessas.find((r) => r.id.toString() === id && r.tenantId === tenantId) ?? null
+  }
+
+  async findItensByLote(tenantId: string, loteId: string): Promise<RemessaItemConsumo[]> {
+    const consumo: RemessaItemConsumo[] = []
+    for (const remessa of this.remessas) {
+      if (remessa.tenantId !== tenantId || remessa.deletedAt !== null) continue
+      for (const item of remessa.itens) {
+        if (item.loteId !== loteId || item.deletedAt !== null) continue
+        consumo.push({
+          itemId: item.id.toString(),
+          remessaId: remessa.id.toString(),
+          numero: remessa.numero,
+          clienteId: remessa.clienteId,
+          clienteNome: this.clienteNomes[remessa.clienteId] ?? remessa.clienteId,
+          quantidade: item.quantidade,
+          data: remessa.data,
+          status: remessa.status,
+        })
+      }
+    }
+    return consumo.sort((a, b) => b.numero.localeCompare(a.numero))
   }
 
   async findManyByEmpresa(

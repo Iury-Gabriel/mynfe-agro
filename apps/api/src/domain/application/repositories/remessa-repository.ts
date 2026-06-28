@@ -8,8 +8,20 @@ export interface RemessaFiltros {
   periodoFim?: Date
 }
 
+export interface RemessaItemConsumo {
+  itemId: string
+  remessaId: string
+  numero: string
+  clienteId: string
+  clienteNome: string
+  quantidade: number
+  data: Date
+  status: RemessaStatus
+}
+
 export abstract class RemessaRepository {
   abstract findById(id: string, tenantId: string): Promise<Remessa | null>
+  abstract findItensByLote(tenantId: string, loteId: string): Promise<RemessaItemConsumo[]>
   abstract findManyByEmpresa(
     tenantId: string,
     empresaFaturadoraId: string,

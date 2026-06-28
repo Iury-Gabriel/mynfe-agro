@@ -8,8 +8,20 @@ export interface PedidoFiltros {
   periodoFim?: Date
 }
 
+export interface PedidoItemConsumo {
+  itemId: string
+  pedidoId: string
+  numero: string
+  clienteId: string
+  clienteNome: string
+  quantidade: number
+  data: Date
+  status: PedidoStatus
+}
+
 export abstract class PedidoRepository {
   abstract findById(id: string, tenantId: string): Promise<Pedido | null>
+  abstract findItensByLote(tenantId: string, loteId: string): Promise<PedidoItemConsumo[]>
   abstract findManyByEmpresa(
     tenantId: string,
     empresaFaturadoraId: string,

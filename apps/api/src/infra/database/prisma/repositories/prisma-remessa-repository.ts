@@ -4,8 +4,11 @@ import { PrismaRemessaMapper } from '../mappers/admin/prisma-remessa-mapper'
 import { PrismaService } from '../prisma.service'
 
 import type { PaginationParams } from '@/core/repositories/pagination-params'
-import type { RemessaFiltros } from '@/domain/application/repositories/remessa-repository'
-import type { Remessa } from '@/domain/enterprise/entities/remessa'
+import type {
+  RemessaFiltros,
+  RemessaItemConsumo,
+} from '@/domain/application/repositories/remessa-repository'
+import type { Remessa, RemessaStatus } from '@/domain/enterprise/entities/remessa'
 import type { Prisma } from '@prisma/client'
 
 import { normalizePagination } from '@/core/repositories/pagination-params'
@@ -62,6 +65,30 @@ export class PrismaRemessaRepository extends RemessaRepository {
     })
 
     return raws.map((raw) => PrismaRemessaMapper.toDomain(raw))
+  }
+
+  async findItensByLote(tenantId: string, loteId: string): Promise<RemessaItemConsumo[]> {
+    const itens = await this.prisma.remessaItem.findMany({
+      where: {
+        tenantId,
+        loteId,
+        deletedAt: null,
+        remessa: { deletedAt: null },
+      },
+      include: { remessa: { include: { cliente: true } } },
+      orderBy: { remessa: { numero: 'desc' } },
+    })
+
+    return itens.map((item) => ({
+      itemId: item.id,
+      remessaId: item.remessaId,
+      numero: item.remessa.numero,
+      clienteId: item.remessa.clienteId,
+      clienteNome: item.remessa.cliente.razaoSocialNome,
+      quantidade: item.quantidade.toNumber(),
+      data: item.remessa.data,
+      status: item.remessa.status as RemessaStatus,
+    }))
   }
 
   async count(

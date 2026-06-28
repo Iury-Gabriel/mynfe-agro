@@ -15,6 +15,28 @@ export interface ListLotesResponse {
   totalPages: number
 }
 
+export interface PedidoItemConsumo {
+  itemId: string
+  pedidoId: string
+  numero: string
+  clienteId: string
+  clienteNome: string
+  quantidade: number
+  data: string
+  status: string
+}
+
+export interface RemessaItemConsumo {
+  itemId: string
+  remessaId: string
+  numero: string
+  clienteId: string
+  clienteNome: string
+  quantidade: number
+  data: string
+  status: string
+}
+
 export interface LoteRastreabilidade {
   lote: Lote
   montante: {
@@ -23,8 +45,8 @@ export interface LoteRastreabilidade {
     areaId: string | null
   }
   jusante: {
-    pedidoItens: unknown[]
-    remessaItens: unknown[]
+    pedidoItens: PedidoItemConsumo[]
+    remessaItens: RemessaItemConsumo[]
   }
 }
 

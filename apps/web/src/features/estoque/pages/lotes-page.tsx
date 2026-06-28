@@ -32,6 +32,16 @@ interface ChainStep {
   value: string
 }
 
+interface ConsumoRow {
+  key: string
+  tipo: 'Pedido' | 'Remessa'
+  numero: string
+  clienteNome: string
+  quantidade: number
+  data: string
+  status: string
+}
+
 function RastreabilidadeDetail({ loteId }: { loteId: string }): ReactElement {
   const { data, isLoading, isError, refetch } = useLoteRastreabilidade(loteId)
 
@@ -63,7 +73,26 @@ function RastreabilidadeDetail({ loteId }: { loteId: string }): ReactElement {
     { icon: <MapPin />, label: 'Área', value: montante.areaId ?? '—' },
   ]
 
-  const consumoTotal = jusante.pedidoItens.length + jusante.remessaItens.length
+  const consumos: ConsumoRow[] = [
+    ...jusante.pedidoItens.map((item) => ({
+      key: `pedido-${item.itemId}`,
+      tipo: 'Pedido' as const,
+      numero: item.numero,
+      clienteNome: item.clienteNome,
+      quantidade: item.quantidade,
+      data: item.data,
+      status: item.status,
+    })),
+    ...jusante.remessaItens.map((item) => ({
+      key: `remessa-${item.itemId}`,
+      tipo: 'Remessa' as const,
+      numero: item.numero,
+      clienteNome: item.clienteNome,
+      quantidade: item.quantidade,
+      data: item.data,
+      status: item.status,
+    })),
+  ]
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1.1fr_1fr]">
@@ -91,14 +120,31 @@ function RastreabilidadeDetail({ loteId }: { loteId: string }): ReactElement {
       </Panel>
 
       <Panel title="Consumido por" description="Documentos que baixaram este lote.">
-        {consumoTotal === 0 ? (
+        {consumos.length === 0 ? (
           <p className="py-10 text-center text-sm text-muted-foreground">
             Nenhum consumo registrado para este lote.
           </p>
         ) : (
-          <p className="py-10 text-center text-sm text-muted-foreground">
-            {consumoTotal} documento(s) vinculado(s).
-          </p>
+          <ul className="space-y-3">
+            {consumos.map((c) => (
+              <li
+                key={c.key}
+                className="flex flex-col gap-2 rounded-xl bg-card/40 p-4 ring-1 ring-inset ring-border/50 sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <StatusPill tone={c.tipo === 'Pedido' ? 'info' : 'neutral'}>{c.tipo}</StatusPill>
+                    <span className="text-sm font-semibold text-foreground">#{c.numero}</span>
+                  </div>
+                  <p className="mt-1 truncate text-sm text-muted-foreground">{c.clienteNome}</p>
+                </div>
+                <div className="flex items-center gap-4 text-sm sm:flex-col sm:items-end sm:gap-0.5">
+                  <span className="font-medium text-foreground">{formatQty(c.quantidade)}</span>
+                  <span className="text-xs text-muted-foreground">{formatDate(c.data)}</span>
+                </div>
+              </li>
+            ))}
+          </ul>
         )}
       </Panel>
     </div>

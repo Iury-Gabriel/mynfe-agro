@@ -84,6 +84,30 @@ async function createCliente(prisma: PrismaClient, tenantId: string): Promise<st
   return id
 }
 
+async function createLote(
+  prisma: PrismaClient,
+  tenantId: string,
+  empresaId: string,
+  produtoId: string,
+): Promise<string> {
+  const id = randomUUID()
+  await prisma.lote.create({
+    data: {
+      id,
+      tenantId,
+      empresaId,
+      produtoId,
+      codigoLote: `LT-${id.slice(0, 8)}`,
+      quantidadeInicial: 100,
+      quantidadeAtual: 100,
+      dataEntrada: new Date(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
+  })
+  return id
+}
+
 interface SeedCtx {
   tenantId: string
   empresaId: string
@@ -91,11 +115,15 @@ interface SeedCtx {
   clienteId: string
 }
 
-function makeItem(ctx: SeedCtx, override: Partial<{ quantidade: number; precoUnitario: number }> = {}) {
+function makeItem(
+  ctx: SeedCtx,
+  override: Partial<{ quantidade: number; precoUnitario: number; loteId: string | null }> = {},
+) {
   return PedidoItem.create({
     tenantId: ctx.tenantId,
     pedidoId: '',
     produtoId: ctx.produtoId,
+    loteId: override.loteId ?? null,
     quantidade: override.quantidade ?? 10,
     precoUnitario: override.precoUnitario ?? 5,
     createdAt: new Date(),
@@ -336,6 +364,70 @@ describe(PrismaPedidoRepository.name, () => {
 
       const found = await sut.findById(pedido.id.toString(), ctx.tenantId)
       expect(found!.status).toBe('confirmado')
+    })
+  })
+
+  describe('findItensByLote', () => {
+    it('retorna itens que referenciam o lote com dados do pedido e cliente', async () => {
+      const ctx = await seed()
+      const loteId = await createLote(prisma, ctx.tenantId, ctx.empresaId, ctx.produtoId)
+
+      await sut.create(
+        makePedido(ctx, {
+          numero: '000010',
+          status: 'confirmado',
+          data: new Date('2024-10-09'),
+          itens: [makeItem(ctx, { loteId, quantidade: 42, precoUnitario: 3 })],
+        }),
+      )
+      // item de outro lote — não deve aparecer
+      await sut.create(makePedido(ctx, { numero: '000011', itens: [makeItem(ctx)] }))
+
+      const itens = await sut.findItensByLote(ctx.tenantId, loteId)
+
+      expect(itens).toHaveLength(1)
+      expect(itens[0]).toMatchObject({
+        numero: '000010',
+        clienteId: ctx.clienteId,
+        clienteNome: 'Cliente Agro LTDA',
+        quantidade: 42,
+        status: 'confirmado',
+      })
+      expect(itens[0].data).toEqual(new Date('2024-10-09'))
+    })
+
+    it('isola por tenant e ignora pedidos/itens soft-deletados', async () => {
+      const ctx = await seed()
+      const other = await seed()
+      const loteId = await createLote(prisma, ctx.tenantId, ctx.empresaId, ctx.produtoId)
+
+      // outro tenant referenciando o mesmo loteId — não deve vazar
+      await sut.create(
+        makePedido(other, { numero: '000001', itens: [makeItem(other, { loteId })] }),
+      )
+
+      const deletedPedido = makePedido(ctx, {
+        numero: '000020',
+        itens: [makeItem(ctx, { loteId })],
+      })
+      await sut.create(deletedPedido)
+      await prisma.pedido.update({
+        where: { id: deletedPedido.id.toString() },
+        data: { deletedAt: new Date() },
+      })
+
+      const itemDeletado = makePedido(ctx, {
+        numero: '000021',
+        itens: [makeItem(ctx, { loteId })],
+      })
+      await sut.create(itemDeletado)
+      await prisma.pedidoItem.updateMany({
+        where: { pedidoId: itemDeletado.id.toString() },
+        data: { deletedAt: new Date() },
+      })
+
+      const itens = await sut.findItensByLote(ctx.tenantId, loteId)
+      expect(itens).toHaveLength(0)
     })
   })
 })

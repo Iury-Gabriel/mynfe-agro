@@ -135,7 +135,32 @@ describe('LotesPage', () => {
         data: {
           lote: makeLote(),
           montante: { colheita: null, safraId: null, areaId: null },
-          jusante: { pedidoItens: [{ id: 'pi1' }], remessaItens: [] },
+          jusante: {
+            pedidoItens: [
+              {
+                itemId: 'pi1',
+                pedidoId: 'p1',
+                numero: '000009',
+                clienteId: 'cli1',
+                clienteNome: 'Atacadão Verde',
+                quantidade: 25,
+                data: '2026-06-13T00:00:00.000Z',
+                status: 'confirmado',
+              },
+            ],
+            remessaItens: [
+              {
+                itemId: 'ri1',
+                remessaId: 'r1',
+                numero: '000004',
+                clienteId: 'cli1',
+                clienteNome: 'Mercado Sol',
+                quantidade: 8,
+                data: '2026-06-14T00:00:00.000Z',
+                status: 'entregue',
+              },
+            ],
+          },
         },
       })
     })
@@ -145,7 +170,12 @@ describe('LotesPage', () => {
     await screen.findByText('LT-2026-0142')
     await user.click(screen.getByRole('button', { name: 'Ver rastreabilidade' }))
 
-    expect(await screen.findByText('1 documento(s) vinculado(s).')).toBeInTheDocument()
+    expect(await screen.findByText('#000009')).toBeInTheDocument()
+    expect(screen.getByText('Atacadão Verde')).toBeInTheDocument()
+    expect(screen.getByText('Pedido')).toBeInTheDocument()
+    expect(screen.getByText('#000004')).toBeInTheDocument()
+    expect(screen.getByText('Mercado Sol')).toBeInTheDocument()
+    expect(screen.getByText('Remessa')).toBeInTheDocument()
     expect(screen.getByText('Sem colheita de origem')).toBeInTheDocument()
   })
 

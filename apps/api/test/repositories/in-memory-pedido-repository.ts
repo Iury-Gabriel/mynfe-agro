@@ -1,5 +1,8 @@
 import type { PaginationParams } from '@/core/repositories/pagination-params'
-import type { PedidoFiltros } from '@/domain/application/repositories/pedido-repository'
+import type {
+  PedidoFiltros,
+  PedidoItemConsumo,
+} from '@/domain/application/repositories/pedido-repository'
 import type { Pedido } from '@/domain/enterprise/entities/pedido'
 
 import { normalizePagination } from '@/core/repositories/pagination-params'
@@ -19,11 +22,33 @@ function matchesFiltros(pedido: Pedido, filtros: PedidoFiltros): boolean {
 
 export class InMemoryPedidoRepository extends PedidoRepository {
   pedidos: Pedido[] = []
+  clienteNomes: Record<string, string> = {}
   shouldFailOnCreate = false
   shouldFailOnSave = false
 
   async findById(id: string, tenantId: string): Promise<Pedido | null> {
     return this.pedidos.find((p) => p.id.toString() === id && p.tenantId === tenantId) ?? null
+  }
+
+  async findItensByLote(tenantId: string, loteId: string): Promise<PedidoItemConsumo[]> {
+    const consumo: PedidoItemConsumo[] = []
+    for (const pedido of this.pedidos) {
+      if (pedido.tenantId !== tenantId || pedido.deletedAt !== null) continue
+      for (const item of pedido.itens) {
+        if (item.loteId !== loteId || item.deletedAt !== null) continue
+        consumo.push({
+          itemId: item.id.toString(),
+          pedidoId: pedido.id.toString(),
+          numero: pedido.numero,
+          clienteId: pedido.clienteId,
+          clienteNome: this.clienteNomes[pedido.clienteId] ?? pedido.clienteId,
+          quantidade: item.quantidade,
+          data: pedido.data,
+          status: pedido.status,
+        })
+      }
+    }
+    return consumo.sort((a, b) => b.numero.localeCompare(a.numero))
   }
 
   async findManyByEmpresa(

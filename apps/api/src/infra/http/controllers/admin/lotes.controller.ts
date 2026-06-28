@@ -10,6 +10,7 @@ import { CustomHttpException } from '@/infra/http/exceptions/custom-http.excepti
 import { ZodValidationPipe } from '@/infra/http/pipes/zod-validation.pipe'
 import { ColheitaPresenter } from '@/infra/http/presenters/admin/colheita-presenter'
 import { LotePresenter } from '@/infra/http/presenters/admin/lote-presenter'
+import { LoteRastreabilidadeJusantePresenter } from '@/infra/http/presenters/admin/lote-rastreabilidade-presenter'
 
 const listLotesQuerySchema = z
   .object({
@@ -76,7 +77,14 @@ export class LotesController {
         safraId: montante.safraId,
         areaId: montante.areaId,
       },
-      jusante,
+      jusante: {
+        pedidoItens: jusante.pedidoItens.map((item) =>
+          LoteRastreabilidadeJusantePresenter.pedidoItemToHTTP(item),
+        ),
+        remessaItens: jusante.remessaItens.map((item) =>
+          LoteRastreabilidadeJusantePresenter.remessaItemToHTTP(item),
+        ),
+      },
     }
   }
 }

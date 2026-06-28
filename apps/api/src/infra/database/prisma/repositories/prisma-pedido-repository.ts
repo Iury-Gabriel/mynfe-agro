@@ -4,8 +4,11 @@ import { PrismaPedidoMapper } from '../mappers/admin/prisma-pedido-mapper'
 import { PrismaService } from '../prisma.service'
 
 import type { PaginationParams } from '@/core/repositories/pagination-params'
-import type { PedidoFiltros } from '@/domain/application/repositories/pedido-repository'
-import type { Pedido } from '@/domain/enterprise/entities/pedido'
+import type {
+  PedidoFiltros,
+  PedidoItemConsumo,
+} from '@/domain/application/repositories/pedido-repository'
+import type { Pedido, PedidoStatus } from '@/domain/enterprise/entities/pedido'
 import type { Prisma } from '@prisma/client'
 
 import { normalizePagination } from '@/core/repositories/pagination-params'
@@ -62,6 +65,30 @@ export class PrismaPedidoRepository extends PedidoRepository {
     })
 
     return raws.map((raw) => PrismaPedidoMapper.toDomain(raw))
+  }
+
+  async findItensByLote(tenantId: string, loteId: string): Promise<PedidoItemConsumo[]> {
+    const itens = await this.prisma.pedidoItem.findMany({
+      where: {
+        tenantId,
+        loteId,
+        deletedAt: null,
+        pedido: { deletedAt: null },
+      },
+      include: { pedido: { include: { cliente: true } } },
+      orderBy: { pedido: { numero: 'desc' } },
+    })
+
+    return itens.map((item) => ({
+      itemId: item.id,
+      pedidoId: item.pedidoId,
+      numero: item.pedido.numero,
+      clienteId: item.pedido.clienteId,
+      clienteNome: item.pedido.cliente.razaoSocialNome,
+      quantidade: item.quantidade.toNumber(),
+      data: item.pedido.data,
+      status: item.pedido.status as PedidoStatus,
+    }))
   }
 
   async count(

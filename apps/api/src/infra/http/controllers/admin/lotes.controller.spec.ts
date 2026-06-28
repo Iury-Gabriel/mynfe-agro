@@ -2,8 +2,14 @@ import { APP_GUARD } from '@nestjs/core'
 import { Test } from '@nestjs/testing'
 import { makeColheita } from '@test/factories/make-colheita'
 import { makeLote } from '@test/factories/make-lote'
+import { makePedido } from '@test/factories/make-pedido'
+import { makePedidoItem } from '@test/factories/make-pedido-item'
+import { makeRemessa } from '@test/factories/make-remessa'
+import { makeRemessaItem } from '@test/factories/make-remessa-item'
 import { InMemoryColheitaRepository } from '@test/repositories/in-memory-colheita-repository'
 import { InMemoryLoteRepository } from '@test/repositories/in-memory-lote-repository'
+import { InMemoryPedidoRepository } from '@test/repositories/in-memory-pedido-repository'
+import { InMemoryRemessaRepository } from '@test/repositories/in-memory-remessa-repository'
 import request from 'supertest'
 import { describe, beforeEach, afterAll, it, expect, vi } from 'vitest'
 
@@ -13,6 +19,8 @@ import type { CanActivate, ExecutionContext, INestApplication } from '@nestjs/co
 
 import { ColheitaRepository } from '@/domain/application/repositories/colheita-repository'
 import { LoteRepository } from '@/domain/application/repositories/lote-repository'
+import { PedidoRepository } from '@/domain/application/repositories/pedido-repository'
+import { RemessaRepository } from '@/domain/application/repositories/remessa-repository'
 import { GetLoteRastreabilidadeUseCase } from '@/domain/application/use-cases/estoque/get-lote-rastreabilidade-use-case'
 import { ListLotesUseCase } from '@/domain/application/use-cases/estoque/list-lotes-use-case'
 import { PermissionGuard } from '@/infra/http/guards/permission.guard'
@@ -39,11 +47,15 @@ describe(LotesController.name, () => {
   let app: INestApplication
   let lotes: InMemoryLoteRepository
   let colheitas: InMemoryColheitaRepository
+  let pedidos: InMemoryPedidoRepository
+  let remessas: InMemoryRemessaRepository
 
   beforeEach(async () => {
     currentUser = mockUser
     lotes = new InMemoryLoteRepository()
     colheitas = new InMemoryColheitaRepository()
+    pedidos = new InMemoryPedidoRepository()
+    remessas = new InMemoryRemessaRepository()
 
     const module = await Test.createTestingModule({
       controllers: [LotesController],
@@ -52,6 +64,8 @@ describe(LotesController.name, () => {
         { provide: APP_GUARD, useClass: PermissionGuard },
         { provide: LoteRepository, useValue: lotes },
         { provide: ColheitaRepository, useValue: colheitas },
+        { provide: PedidoRepository, useValue: pedidos },
+        { provide: RemessaRepository, useValue: remessas },
         ListLotesUseCase,
         GetLoteRastreabilidadeUseCase,
       ],
@@ -115,6 +129,52 @@ describe(LotesController.name, () => {
       expect(res.body.montante.colheita.id).toBe('c-1')
       expect(res.body.montante.safraId).toBe('safra-1')
       expect(res.body.jusante).toEqual({ pedidoItens: [], remessaItens: [] })
+    })
+
+    it('retorna jusante com pedidos e remessas que consumiram o lote', async () => {
+      lotes.lotes.push(makeLote({ id: 'l-7', tenantId: 'tenant-1' }))
+      pedidos.clienteNomes['cliente-1'] = 'Atacadão Verde'
+      remessas.clienteNomes['cliente-1'] = 'Atacadão Verde'
+      pedidos.pedidos.push(
+        makePedido({
+          id: 'p-1',
+          tenantId: 'tenant-1',
+          numero: '000009',
+          clienteId: 'cliente-1',
+          status: 'confirmado',
+          itens: [makePedidoItem({ id: 'pi-1', pedidoId: 'p-1', loteId: 'l-7', quantidade: 25 })],
+        }),
+      )
+      remessas.remessas.push(
+        makeRemessa({
+          id: 'r-1',
+          tenantId: 'tenant-1',
+          numero: '000004',
+          clienteId: 'cliente-1',
+          status: 'entregue',
+          itens: [makeRemessaItem({ id: 'ri-1', remessaId: 'r-1', loteId: 'l-7', quantidade: 8 })],
+        }),
+      )
+
+      const res = await request(app.getHttpServer()).get('/lotes/l-7/rastreabilidade')
+
+      expect(res.status).toBe(200)
+      expect(res.body.jusante.pedidoItens).toHaveLength(1)
+      expect(res.body.jusante.pedidoItens[0]).toMatchObject({
+        pedidoId: 'p-1',
+        numero: '000009',
+        clienteNome: 'Atacadão Verde',
+        quantidade: 25,
+        status: 'confirmado',
+      })
+      expect(res.body.jusante.remessaItens).toHaveLength(1)
+      expect(res.body.jusante.remessaItens[0]).toMatchObject({
+        remessaId: 'r-1',
+        numero: '000004',
+        clienteNome: 'Atacadão Verde',
+        quantidade: 8,
+        status: 'entregue',
+      })
     })
 
     it('retorna 404 quando lote não existe', async () => {
