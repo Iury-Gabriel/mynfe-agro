@@ -24,13 +24,25 @@ export interface PermissionsCache {
   set<T>(key: string, value: T, opts: { ttlSeconds: number }): Promise<void>
 }
 
+export interface ResetPasswordMailer {
+  sendPasswordReset(input: {
+    to: string
+    name: string
+    resetUrl: string
+    expiresInMinutes: number
+  }): Promise<void>
+}
+
 export { permissionsCacheKey }
+
+const RESET_PASSWORD_EXPIRES_MINUTES = 60
 
 export function createAuth(
   prisma: PrismaClient,
   env: CreateAuthEnv,
   redis: Redis,
   cache: PermissionsCache,
+  mailer: ResetPasswordMailer,
 ): Auth {
   return betterAuth({
     database: prismaAdapter(prisma, { provider: 'postgresql' }),
@@ -61,6 +73,18 @@ export function createAuth(
       requireEmailVerification: env.MAIL_ENABLED,
       minPasswordLength: 12,
       maxPasswordLength: 128,
+      sendResetPassword: async ({ user, url }) => {
+        try {
+          await mailer.sendPasswordReset({
+            to: user.email,
+            name: user.name,
+            resetUrl: url,
+            expiresInMinutes: RESET_PASSWORD_EXPIRES_MINUTES,
+          })
+        } catch (err) {
+          console.error('[auth.sendResetPassword] falha ao enviar email:', err)
+        }
+      },
     },
 
     session: {
@@ -92,9 +116,15 @@ export function createAuth(
     plugins: [
       customSession(async ({ user, session }) => {
         try {
+          const empresaLinks = await prisma.usuarioEmpresa.findMany({
+            where: { userId: user.id, empresa: { deletedAt: null } },
+            select: { empresaId: true },
+          })
+          const empresaIds = empresaLinks.map((link) => link.empresaId)
+
           const cacheKey = permissionsCacheKey(user.id)
           const cached = await cache.get<string[]>(cacheKey)
-          if (cached) return { user, session, permissions: cached }
+          if (cached) return { user, session, permissions: cached, empresaIds }
 
           const assignments = await prisma.userRoleAssignment.findMany({
             where: { userId: user.id },
@@ -108,7 +138,7 @@ export function createAuth(
           await cache.set(cacheKey, permissions, {
             ttlSeconds: env.PERMISSIONS_CACHE_TTL_SECONDS,
           })
-          return { user, session, permissions }
+          return { user, session, permissions, empresaIds }
         } catch (err) {
           console.error('[customSession] falha ao carregar permissions:', err)
           throw err

@@ -132,6 +132,156 @@ export const router = createBrowserRouter([
     loader: privateLoader,
     children: [
       {
+        index: true,
+        lazy: () =>
+          import('@/features/dashboard/pages/dashboard-home-page').then((m) => ({
+            Component: m.DashboardHomePage,
+          })),
+        loader: () => requirePermission('view:dashboard'),
+      },
+      {
+        path: 'empresas',
+        lazy: () =>
+          import('@/features/admin/pages/empresas-page').then((m) => ({
+            Component: m.EmpresasPage,
+          })),
+        loader: () => requirePermission('empresa:read'),
+      },
+      {
+        path: 'fazendas',
+        lazy: () =>
+          import('@/features/admin/pages/fazendas-page').then((m) => ({
+            Component: m.FazendasPage,
+          })),
+        loader: () => requirePermission('fazenda:read'),
+      },
+      {
+        path: 'areas',
+        lazy: () =>
+          import('@/features/admin/pages/areas-page').then((m) => ({ Component: m.AreasPage })),
+        loader: () => requirePermission('area:read'),
+      },
+      {
+        path: 'clientes',
+        lazy: () =>
+          import('@/features/admin/pages/clientes-page').then((m) => ({
+            Component: m.ClientesPage,
+          })),
+        loader: () => requirePermission('cliente:read'),
+      },
+      {
+        path: 'produtos',
+        lazy: () =>
+          import('@/features/admin/pages/produtos-page').then((m) => ({
+            Component: m.ProdutosPage,
+          })),
+        loader: () => requirePermission('produto:read'),
+      },
+      {
+        path: 'tabela-precos',
+        lazy: () =>
+          import('@/features/admin/pages/tabela-precos-page').then((m) => ({
+            Component: m.TabelaPrecosPage,
+          })),
+        loader: () => requirePermission('preco:read'),
+      },
+      {
+        path: 'safras',
+        lazy: () =>
+          import('@/features/admin/pages/safras-page').then((m) => ({ Component: m.SafrasPage })),
+        loader: () => requirePermission('safra:read'),
+      },
+      {
+        path: 'atividades-campo',
+        lazy: () =>
+          import('@/features/admin/pages/atividades-campo-page').then((m) => ({
+            Component: m.AtividadesCampoPage,
+          })),
+        loader: () => requirePermission('atividade:read'),
+      },
+      {
+        path: 'custos-producao',
+        lazy: () =>
+          import('@/features/admin/pages/custos-producao-page').then((m) => ({
+            Component: m.CustosProducaoPage,
+          })),
+        loader: () => requirePermission('custo:read'),
+      },
+      {
+        path: 'estoque',
+        lazy: () =>
+          import('@/features/estoque/pages/estoque-page').then((m) => ({ Component: m.EstoquePage })),
+        loader: () => requirePermission('estoque:read'),
+      },
+      {
+        path: 'lotes',
+        lazy: () =>
+          import('@/features/estoque/pages/lotes-page').then((m) => ({ Component: m.LotesPage })),
+        loader: () => requirePermission('lote:read'),
+      },
+      {
+        path: 'colheitas',
+        lazy: () =>
+          import('@/features/estoque/pages/colheitas-page').then((m) => ({
+            Component: m.ColheitasPage,
+          })),
+        loader: () => requirePermission('colheita:read'),
+      },
+      {
+        path: 'vendas/pedidos',
+        lazy: () =>
+          import('@/features/vendas/pages/pedidos-page').then((m) => ({ Component: m.PedidosPage })),
+        loader: () => requirePermission('pedido:read'),
+      },
+      {
+        path: 'vendas/remessas',
+        lazy: () =>
+          import('@/features/vendas/pages/remessas-page').then((m) => ({
+            Component: m.RemessasPage,
+          })),
+        loader: () => requirePermission('remessa:read'),
+      },
+      {
+        path: 'vendas/consolidacao',
+        lazy: () =>
+          import('@/features/vendas/pages/consolidacao-page').then((m) => ({
+            Component: m.ConsolidacaoPage,
+          })),
+        loader: () => requirePermission('consolidacao:create'),
+      },
+      {
+        path: 'fila-faturamento',
+        lazy: () =>
+          import('@/features/fiscal/pages/fila-faturamento-page').then((m) => ({
+            Component: m.FilaFaturamentoPage,
+          })),
+        loader: () => requirePermission('nota:read'),
+      },
+      {
+        path: 'notas-fiscais',
+        lazy: () =>
+          import('@/features/fiscal/pages/notas-fiscais-page').then((m) => ({
+            Component: m.NotasFiscaisPage,
+          })),
+        loader: () => requirePermission('nota:read'),
+      },
+      {
+        path: 'configuracoes',
+        lazy: () =>
+          import('@/features/admin/pages/configuracoes-page').then((m) => ({
+            Component: m.ConfiguracoesPage,
+          })),
+        loader: () => requirePermission('view:settings'),
+      },
+      {
+        path: 'auditoria',
+        lazy: () =>
+          import('@/features/admin/pages/auditoria-page').then((m) => ({
+            Component: m.AuditoriaPage,
+          })),
+        loader: () => requirePermission('auditoria:read'),
+      },
+      {
         path: 'admin/roles',
         lazy: () =>
           import('@/features/admin/pages/roles-page').then((m) => ({ Component: m.RolesPage })),

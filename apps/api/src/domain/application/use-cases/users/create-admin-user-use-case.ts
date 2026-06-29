@@ -7,6 +7,7 @@ import { UnexpectedError } from '@/core/errors/unexpected-error'
 import { CacheRepository } from '@/domain/application/cache/cache-repository'
 import { permissionsCacheKey } from '@/domain/application/cache/permissions-cache'
 import { AuthProvider } from '@/domain/application/providers/auth-provider'
+import { TransactionalMailProvider } from '@/domain/application/providers/transactional-mail-provider'
 import { UserRoleAssignmentRepository } from '@/domain/application/repositories/user-role-assignment-repository'
 import { EmailAlreadyInUseError } from '@/domain/application/use-cases/errors/email-already-in-use-error'
 
@@ -30,6 +31,7 @@ export class CreateAdminUserUseCase {
     private readonly authProvider: AuthProvider,
     private readonly assignmentRepo: UserRoleAssignmentRepository,
     private readonly cache: CacheRepository,
+    private readonly mail: TransactionalMailProvider,
   ) {}
 
   async execute(input: CreateAdminUserInput): Promise<CreateAdminUserResult> {
@@ -62,6 +64,12 @@ export class CreateAdminUserUseCase {
         )
       }
       return left(new UnexpectedError(err))
+    }
+
+    try {
+      await this.mail.sendWelcome({ to: input.email, name: input.name })
+    } catch (mailErr) {
+      console.error('[CreateAdminUserUseCase] welcome email failed:', mailErr)
     }
 
     return right({ user: result.user })

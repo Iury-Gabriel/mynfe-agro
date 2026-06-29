@@ -192,4 +192,53 @@ describe('envSchema', () => {
   it('rejeita STORAGE_DRIVER=s3 sem STORAGE_BUCKET', () => {
     expect(() => envSchema.parse({ ...baseEnv(), STORAGE_DRIVER: 's3' })).toThrow()
   })
+
+  it('PLUGNOTAS desabilitado por padrão com base url de homologação', () => {
+    const sut = envSchema.parse(baseEnv())
+
+    expect(sut.PLUGNOTAS_ENABLED).toBe(false)
+    expect(sut.PLUGNOTAS_API_KEY).toBeUndefined()
+    expect(sut.PLUGNOTAS_BASE_URL).toBe('https://api.sandbox.plugnotas.com.br')
+    expect(sut.PLUGNOTAS_TIMEOUT_MS).toBe(30000)
+  })
+
+  it('rejeita PLUGNOTAS_ENABLED=true sem PLUGNOTAS_API_KEY', () => {
+    expect(() => envSchema.parse({ ...baseEnv(), PLUGNOTAS_ENABLED: 'true' })).toThrow()
+  })
+
+  it('aceita PLUGNOTAS_ENABLED=true com PLUGNOTAS_API_KEY', () => {
+    const sut = envSchema.parse({
+      ...baseEnv(),
+      PLUGNOTAS_ENABLED: 'true',
+      PLUGNOTAS_API_KEY: 'secret-key',
+    })
+
+    expect(sut.PLUGNOTAS_ENABLED).toBe(true)
+    expect(sut.PLUGNOTAS_API_KEY).toBe('secret-key')
+  })
+
+  it('RESEND desabilitado por padrão com MAIL_FROM default', () => {
+    const sut = envSchema.parse(baseEnv())
+
+    expect(sut.RESEND_ENABLED).toBe(false)
+    expect(sut.RESEND_API_KEY).toBeUndefined()
+    expect(sut.MAIL_FROM).toBe('AgroFlow <no-reply@example.com>')
+  })
+
+  it('rejeita RESEND_ENABLED=true sem RESEND_API_KEY', () => {
+    expect(() => envSchema.parse({ ...baseEnv(), RESEND_ENABLED: 'true' })).toThrow()
+  })
+
+  it('aceita RESEND_ENABLED=true com RESEND_API_KEY e MAIL_FROM customizado', () => {
+    const sut = envSchema.parse({
+      ...baseEnv(),
+      RESEND_ENABLED: 'true',
+      RESEND_API_KEY: 're_secret',
+      MAIL_FROM: 'Custom <custom@example.com>',
+    })
+
+    expect(sut.RESEND_ENABLED).toBe(true)
+    expect(sut.RESEND_API_KEY).toBe('re_secret')
+    expect(sut.MAIL_FROM).toBe('Custom <custom@example.com>')
+  })
 })

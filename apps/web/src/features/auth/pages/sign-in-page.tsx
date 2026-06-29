@@ -37,7 +37,7 @@ export function SignInPage(): ReactElement {
     signIn.error instanceof ApiError ? signIn.error.message : signIn.isError ? 'Erro ao fazer login. Tente novamente.' : null
 
   return (
-    <div className="w-full max-w-sm rounded-lg border border-border bg-card p-6 shadow-sm sm:p-8">
+    <div className="w-full max-w-sm rounded-2xl border border-border/60 bg-card/70 p-6 shadow-xl shadow-black/20 backdrop-blur-sm sm:p-8">
       <div className="mb-6 space-y-1">
         <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">Entrar</h1>
         <p className="text-sm text-muted-foreground">Use seu e-mail e senha para acessar</p>
@@ -66,7 +66,7 @@ export function SignInPage(): ReactElement {
             <Label htmlFor="password">Senha</Label>
             <Link
               to="/forgot-password"
-              className="text-xs text-muted-foreground underline-offset-4 hover:underline"
+              className="text-xs text-primary underline-offset-4 hover:underline"
             >
               Esqueceu a senha?
             </Link>

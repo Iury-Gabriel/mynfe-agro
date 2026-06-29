@@ -68,7 +68,22 @@ export const envSchema = z.object({
     .default('false')
     .transform((s) => s === 'true'),
 
+  RESEND_ENABLED: z
+    .string()
+    .default('false')
+    .transform((s) => s === 'true'),
+  RESEND_API_KEY: z.string().optional(),
+  MAIL_FROM: z.string().default('AgroFlow <no-reply@example.com>'),
+
   WEBHOOK_SECRET: z.string().min(16).optional(),
+
+  PLUGNOTAS_ENABLED: z
+    .string()
+    .default('false')
+    .transform((s) => s === 'true'),
+  PLUGNOTAS_API_KEY: z.string().optional(),
+  PLUGNOTAS_BASE_URL: z.string().url().default('https://api.sandbox.plugnotas.com.br'),
+  PLUGNOTAS_TIMEOUT_MS: z.coerce.number().int().positive().default(30000),
 
   BULL_BOARD_PATH: z.string().default('/admin/queues'),
   BULL_BOARD_ENABLED: z
@@ -104,6 +119,12 @@ export const envSchema = z.object({
   }
   if (data.STORAGE_DRIVER === 's3' && !data.STORAGE_BUCKET) {
     ctx.addIssue({ code: 'custom', path: ['STORAGE_BUCKET'], message: 'obrigatório quando STORAGE_DRIVER=s3' })
+  }
+  if (data.PLUGNOTAS_ENABLED && !data.PLUGNOTAS_API_KEY) {
+    ctx.addIssue({ code: 'custom', path: ['PLUGNOTAS_API_KEY'], message: 'obrigatório quando PLUGNOTAS_ENABLED=true' })
+  }
+  if (data.RESEND_ENABLED && !data.RESEND_API_KEY) {
+    ctx.addIssue({ code: 'custom', path: ['RESEND_API_KEY'], message: 'obrigatório quando RESEND_ENABLED=true' })
   }
 })
 

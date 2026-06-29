@@ -8,21 +8,25 @@ datasource db {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  emailVerified Boolean   @default(false)
+  id            String   @id @default(cuid())
+  email         String   @unique
+  emailVerified Boolean  @default(false)
   name          String
   image         String?
-  isActive      Boolean   @default(true)
-  isProtected   Boolean   @default(false)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  isActive      Boolean  @default(true)
+  isProtected   Boolean  @default(false)
+  tenantId      String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
+  tenant          Tenant?              @relation(fields: [tenantId], references: [id])
   sessions        Session[]
   accounts        Account[]
   roleAssignments UserRoleAssignment[]
+  empresas        UsuarioEmpresa[]
 
   @@index([name])
+  @@index([tenantId])
   @@map("users")
 }
 
@@ -96,13 +100,16 @@ model Role {
   name        String   @unique
   description String?
   isSystem    Boolean  @default(false)
+  tenantId    String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  tenant      Tenant?              @relation(fields: [tenantId], references: [id])
   permissions RolePermission[]
   assignments UserRoleAssignment[]
 
   @@index([name])
+  @@index([tenantId])
   @@map("roles")
 }
 
@@ -139,12 +146,14 @@ model AuditEvent {
   action       String
   resourceType String
   resourceId   String?
+  tenantId     String?
   metadata     Json?
   createdAt    DateTime @default(now())
 
   @@index([actorUserId, createdAt])
   @@index([resourceType, resourceId])
   @@index([createdAt])
+  @@index([tenantId])
   @@map("audit_events")
 }
 
@@ -155,4 +164,706 @@ model SeedHistory {
   success Boolean
 
   @@map("seed_history")
+}
+
+model Tenant {
+  id                   String    @id @default(cuid())
+  nome                 String
+  status               String    @default("ativo")
+  labelArea            String    @default("Talhão")
+  diaCorteConsolidacao Int?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  deletedAt            DateTime?
+
+  usuarios          User[]
+  roles             Role[]
+  empresas          Empresa[]
+  fazendas          Fazenda[]
+  areas             Area[]
+  safras            Safra[]
+  atividadesCampo   AtividadeCampo[]
+  custosProducao    CustoProducao[]
+  produtos          Produto[]
+  fichasTecnicas    ProdutoFichaTecnica[]
+  clientes          Cliente[]
+  enderecosEntrega  ClienteEnderecoEntrega[]
+  tabelasPreco      TabelaPrecoCliente[]
+  colheitas         Colheita[]
+  lotes             Lote[]
+  estoqueMovimentos EstoqueMovimento[]
+  estoqueSaldos     EstoqueSaldo[]
+  pedidos           Pedido[]
+  pedidoItens       PedidoItem[]
+  remessas          Remessa[]
+  remessaItens      RemessaItem[]
+  notasFiscais      NotaFiscal[]
+  notaFiscalItens   NotaFiscalItem[]
+  notaFiscalEventos NotaFiscalEvento[]
+  auditoriaLogs     AuditoriaLog[]
+
+  @@map("tenants")
+}
+
+model Empresa {
+  id                  String    @id @default(cuid())
+  tenantId            String
+  tipoPessoa          String
+  razaoSocial         String
+  nomeFantasia        String?
+  cnpjCpf             String
+  inscricaoEstadual   String?
+  ieProdutorRural     String?
+  inscricaoMunicipal  String?
+  regimeTributario    String
+  crt                 String
+  enderecoLogradouro  String?
+  enderecoNumero      String?
+  enderecoComplemento String?
+  enderecoBairro      String?
+  enderecoCep         String?
+  enderecoMunicipio   String?
+  codMunicipioIbge    String?
+  uf                  String?
+  pais                String?   @default("Brasil")
+  emailFiscal         String?
+  telefone            String?
+  ambienteFiscal      String    @default("homologacao")
+  serieNfe            String?
+  proximaNumeracaoNfe BigInt    @default(1)
+  plugnotasConfig     Json?
+  certificadoRef      String?
+  status              String    @default("ativo")
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  deletedAt           DateTime?
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  usuarios          UsuarioEmpresa[]
+  fazendas          Fazenda[]
+  produtos          Produto[]
+  colheitas         Colheita[]
+  lotes             Lote[]
+  estoqueMovimentos EstoqueMovimento[]
+  estoqueSaldos     EstoqueSaldo[]
+  pedidosFaturados  Pedido[]           @relation("PedidoEmpresaFaturadora")
+  remessas          Remessa[]          @relation("RemessaEmpresaFaturadora")
+  notasEmitidas     NotaFiscal[]       @relation("NotaEmpresaEmitente")
+
+  @@index([tenantId])
+  @@index([cnpjCpf])
+  @@map("empresas")
+}
+
+model UsuarioEmpresa {
+  userId    String
+  empresaId String
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+
+  @@id([userId, empresaId])
+  @@index([userId])
+  @@index([empresaId])
+  @@map("usuario_empresas")
+}
+
+model Fazenda {
+  id                 String    @id @default(cuid())
+  tenantId           String
+  empresaId          String
+  nome               String
+  enderecoLogradouro String?
+  enderecoNumero     String?
+  enderecoBairro     String?
+  enderecoCep        String?
+  municipio          String?
+  uf                 String?
+  latitude           Decimal?  @db.Decimal(10, 7)
+  longitude          Decimal?  @db.Decimal(10, 7)
+  car                String?
+  nirfIncra          String?
+  areaTotalHa        Decimal?  @db.Decimal(15, 3)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  deletedAt          DateTime?
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id])
+  empresa Empresa @relation(fields: [empresaId], references: [id])
+
+  areas Area[]
+
+  @@index([tenantId])
+  @@index([empresaId])
+  @@map("fazendas")
+}
+
+model Area {
+  id             String    @id @default(cuid())
+  tenantId       String
+  fazendaId      String
+  identificacao  String
+  tamanho        Decimal?  @db.Decimal(15, 3)
+  unidadeTamanho String?
+  rotulo         String?
+  geometria      Json?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id])
+  fazenda Fazenda @relation(fields: [fazendaId], references: [id])
+
+  safras          Safra[]
+  atividadesCampo AtividadeCampo[]
+  custosProducao  CustoProducao[]
+  colheitas       Colheita[]
+  lotes           Lote[]
+
+  @@index([tenantId])
+  @@index([fazendaId])
+  @@map("areas")
+}
+
+model Safra {
+  id                    String    @id @default(cuid())
+  tenantId              String
+  areaId                String
+  cultura               String
+  variedade             String?
+  dataPlantio           DateTime? @db.Date
+  dataColheitaPrevista  DateTime? @db.Date
+  dataColheitaRealizada DateTime? @db.Date
+  estimativaProducao    Decimal?  @db.Decimal(15, 3)
+  status                String    @default("planejado")
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  deletedAt             DateTime?
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  area   Area   @relation(fields: [areaId], references: [id])
+
+  atividadesCampo AtividadeCampo[]
+  custosProducao  CustoProducao[]
+  colheitas       Colheita[]
+
+  @@index([tenantId])
+  @@index([areaId])
+  @@map("safras")
+}
+
+model AtividadeCampo {
+  id                   String    @id @default(cuid())
+  tenantId             String
+  safraId              String?
+  areaId               String?
+  tipo                 String
+  data                 DateTime  @db.Date
+  responsavelUsuarioId String?
+  observacoes          String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  deletedAt            DateTime?
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  safra  Safra? @relation(fields: [safraId], references: [id])
+  area   Area?  @relation(fields: [areaId], references: [id])
+
+  @@index([tenantId])
+  @@index([safraId])
+  @@index([areaId])
+  @@map("atividades_campo")
+}
+
+model CustoProducao {
+  id        String    @id @default(cuid())
+  tenantId  String
+  safraId   String?
+  areaId    String?
+  tipo      String
+  descricao String
+  valor     Decimal   @db.Decimal(15, 2)
+  data      DateTime  @db.Date
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  safra  Safra? @relation(fields: [safraId], references: [id])
+  area   Area?  @relation(fields: [areaId], references: [id])
+
+  @@index([tenantId])
+  @@index([safraId])
+  @@index([areaId])
+  @@map("custos_producao")
+}
+
+model Produto {
+  id               String    @id @default(cuid())
+  tenantId         String
+  empresaId        String
+  descricao        String
+  tipo             String
+  unidadeMedida    String
+  precoPadrao      Decimal?  @db.Decimal(15, 2)
+  ncm              String?
+  cest             String?
+  cfopPadrao       String?
+  origemMercadoria String?
+  cstCsosn         String?
+  aliquotas        Json?
+  status           String    @default("ativo")
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  deletedAt        DateTime?
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id])
+  empresa Empresa @relation(fields: [empresaId], references: [id])
+
+  fichasTecnicas    ProdutoFichaTecnica[]
+  tabelasPreco      TabelaPrecoCliente[]
+  colheitas         Colheita[]
+  lotes             Lote[]
+  estoqueMovimentos EstoqueMovimento[]
+  estoqueSaldos     EstoqueSaldo[]
+  pedidoItens       PedidoItem[]
+  remessaItens      RemessaItem[]
+  notaFiscalItens   NotaFiscalItem[]
+
+  @@index([tenantId])
+  @@index([empresaId])
+  @@map("produtos")
+}
+
+model ProdutoFichaTecnica {
+  id                   String    @id @default(cuid())
+  tenantId             String
+  produtoId            String
+  descricaoComponente  String
+  quantidadeReferencia Decimal?  @db.Decimal(15, 3)
+  observacoes          String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  deletedAt            DateTime?
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id])
+  produto Produto @relation(fields: [produtoId], references: [id])
+
+  @@index([tenantId])
+  @@index([produtoId])
+  @@map("produto_ficha_tecnica")
+}
+
+model Cliente {
+  id                 String    @id @default(cuid())
+  tenantId           String
+  tipoPessoa         String
+  razaoSocialNome    String
+  cnpjCpf            String
+  inscricaoEstadual  String?
+  indicadorIe        String
+  contribuinteIcms   Boolean   @default(false)
+  enderecoLogradouro String?
+  enderecoNumero     String?
+  enderecoBairro     String?
+  enderecoCep        String?
+  municipio          String?
+  codMunicipioIbge   String?
+  uf                 String?
+  email              String?
+  telefone           String?
+  vendedorUsuarioId  String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  deletedAt          DateTime?
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  enderecosEntrega ClienteEnderecoEntrega[]
+  tabelasPreco     TabelaPrecoCliente[]
+  pedidos          Pedido[]
+  remessas         Remessa[]
+  notasFiscais     NotaFiscal[]
+
+  @@index([tenantId])
+  @@index([cnpjCpf])
+  @@index([vendedorUsuarioId])
+  @@map("clientes")
+}
+
+model ClienteEnderecoEntrega {
+  id                 String    @id @default(cuid())
+  tenantId           String
+  clienteId          String
+  enderecoLogradouro String?
+  enderecoNumero     String?
+  enderecoBairro     String?
+  enderecoCep        String?
+  municipio          String?
+  uf                 String?
+  principal          Boolean   @default(false)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  deletedAt          DateTime?
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id])
+  cliente Cliente @relation(fields: [clienteId], references: [id])
+
+  @@index([tenantId])
+  @@index([clienteId])
+  @@map("cliente_enderecos_entrega")
+}
+
+model TabelaPrecoCliente {
+  id             String    @id @default(cuid())
+  tenantId       String
+  clienteId      String
+  produtoId      String
+  preco          Decimal   @db.Decimal(15, 2)
+  vigenciaInicio DateTime? @db.Date
+  vigenciaFim    DateTime? @db.Date
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id])
+  cliente Cliente @relation(fields: [clienteId], references: [id])
+  produto Produto @relation(fields: [produtoId], references: [id])
+
+  @@unique([clienteId, produtoId, vigenciaInicio])
+  @@index([tenantId])
+  @@index([clienteId])
+  @@index([produtoId])
+  @@map("tabela_preco_cliente")
+}
+
+model Colheita {
+  id                   String    @id @default(cuid())
+  tenantId             String
+  empresaId            String
+  produtoId            String
+  safraId              String?
+  areaId               String?
+  quantidade           Decimal   @db.Decimal(15, 3)
+  data                 DateTime  @db.Date
+  responsavelUsuarioId String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  deletedAt            DateTime?
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id])
+  empresa Empresa @relation(fields: [empresaId], references: [id])
+  produto Produto @relation(fields: [produtoId], references: [id])
+  safra   Safra?  @relation(fields: [safraId], references: [id])
+  area    Area?   @relation(fields: [areaId], references: [id])
+
+  lotes Lote[]
+
+  @@index([tenantId])
+  @@index([empresaId])
+  @@index([produtoId])
+  @@index([safraId])
+  @@index([areaId])
+  @@map("colheitas")
+}
+
+model Lote {
+  id                String    @id @default(cuid())
+  tenantId          String
+  empresaId         String
+  produtoId         String
+  codigoLote        String
+  origemTipo        String?
+  colheitaId        String?
+  areaId            String?
+  quantidadeInicial Decimal   @db.Decimal(15, 3)
+  quantidadeAtual   Decimal   @db.Decimal(15, 3)
+  validade          DateTime? @db.Date
+  dataEntrada       DateTime  @default(now())
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  deletedAt         DateTime?
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id])
+  empresa  Empresa   @relation(fields: [empresaId], references: [id])
+  produto  Produto   @relation(fields: [produtoId], references: [id])
+  colheita Colheita? @relation(fields: [colheitaId], references: [id])
+  area     Area?     @relation(fields: [areaId], references: [id])
+
+  estoqueMovimentos EstoqueMovimento[]
+  estoqueSaldos     EstoqueSaldo[]
+  pedidoItens       PedidoItem[]
+  remessaItens      RemessaItem[]
+
+  @@index([tenantId])
+  @@index([empresaId])
+  @@index([produtoId])
+  @@index([colheitaId])
+  @@index([areaId])
+  @@map("lotes")
+}
+
+model EstoqueMovimento {
+  id           String    @id @default(cuid())
+  tenantId     String
+  empresaId    String
+  produtoId    String
+  loteId       String?
+  tipo         String
+  origem       String
+  referenciaId String?
+  quantidade   Decimal   @db.Decimal(15, 3)
+  data         DateTime  @default(now())
+  usuarioId    String?
+  motivo       String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id])
+  empresa Empresa @relation(fields: [empresaId], references: [id])
+  produto Produto @relation(fields: [produtoId], references: [id])
+  lote    Lote?   @relation(fields: [loteId], references: [id])
+
+  @@index([tenantId])
+  @@index([empresaId])
+  @@index([produtoId])
+  @@index([loteId])
+  @@map("estoque_movimentos")
+}
+
+model EstoqueSaldo {
+  id                   String   @id @default(cuid())
+  tenantId             String
+  empresaId            String
+  produtoId            String
+  loteId               String?
+  quantidadeDisponivel Decimal  @default(0) @db.Decimal(15, 3)
+  quantidadeReservada  Decimal  @default(0) @db.Decimal(15, 3)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id])
+  empresa Empresa @relation(fields: [empresaId], references: [id])
+  produto Produto @relation(fields: [produtoId], references: [id])
+  lote    Lote?   @relation(fields: [loteId], references: [id])
+
+  @@unique([empresaId, produtoId, loteId])
+  @@index([tenantId])
+  @@index([empresaId])
+  @@index([produtoId])
+  @@map("estoque_saldos")
+}
+
+model Pedido {
+  id                  String    @id @default(cuid())
+  tenantId            String
+  empresaFaturadoraId String
+  clienteId           String
+  numero              String
+  tipo                String
+  status              String    @default("rascunho")
+  valorTotal          Decimal   @default(0) @db.Decimal(15, 2)
+  periodoConsolidacao DateTime? @db.Date
+  data                DateTime  @default(now())
+  observacoes         String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  deletedAt           DateTime?
+
+  tenant            Tenant  @relation(fields: [tenantId], references: [id])
+  empresaFaturadora Empresa @relation("PedidoEmpresaFaturadora", fields: [empresaFaturadoraId], references: [id])
+  cliente           Cliente @relation(fields: [clienteId], references: [id])
+
+  itens        PedidoItem[]
+  remessas     Remessa[]    @relation("RemessaPedidoConsolidado")
+  notasFiscais NotaFiscal[]
+
+  @@index([tenantId])
+  @@index([empresaFaturadoraId])
+  @@index([clienteId])
+  @@map("pedidos")
+}
+
+model PedidoItem {
+  id            String    @id @default(cuid())
+  tenantId      String
+  pedidoId      String
+  produtoId     String
+  loteId        String?
+  quantidade    Decimal   @db.Decimal(15, 3)
+  precoUnitario Decimal   @db.Decimal(15, 2)
+  valorTotal    Decimal   @db.Decimal(15, 2)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id])
+  pedido  Pedido  @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  produto Produto @relation(fields: [produtoId], references: [id])
+  lote    Lote?   @relation(fields: [loteId], references: [id])
+
+  @@index([tenantId])
+  @@index([pedidoId])
+  @@index([produtoId])
+  @@index([loteId])
+  @@map("pedido_itens")
+}
+
+model Remessa {
+  id                  String    @id @default(cuid())
+  tenantId            String
+  empresaFaturadoraId String
+  clienteId           String
+  numero              String
+  status              String    @default("aberta")
+  pedidoConsolidadoId String?
+  valorEstimado       Decimal   @default(0) @db.Decimal(15, 2)
+  data                DateTime  @default(now())
+  observacoes         String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  deletedAt           DateTime?
+
+  tenant            Tenant  @relation(fields: [tenantId], references: [id])
+  empresaFaturadora Empresa @relation("RemessaEmpresaFaturadora", fields: [empresaFaturadoraId], references: [id])
+  cliente           Cliente @relation(fields: [clienteId], references: [id])
+  pedidoConsolidado Pedido? @relation("RemessaPedidoConsolidado", fields: [pedidoConsolidadoId], references: [id])
+
+  itens RemessaItem[]
+
+  @@index([tenantId])
+  @@index([empresaFaturadoraId])
+  @@index([clienteId])
+  @@index([pedidoConsolidadoId])
+  @@map("remessas")
+}
+
+model RemessaItem {
+  id            String    @id @default(cuid())
+  tenantId      String
+  remessaId     String
+  produtoId     String
+  loteId        String?
+  quantidade    Decimal   @db.Decimal(15, 3)
+  precoUnitario Decimal   @db.Decimal(15, 2)
+  valorTotal    Decimal   @db.Decimal(15, 2)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id])
+  remessa Remessa @relation(fields: [remessaId], references: [id], onDelete: Cascade)
+  produto Produto @relation(fields: [produtoId], references: [id])
+  lote    Lote?   @relation(fields: [loteId], references: [id])
+
+  @@index([tenantId])
+  @@index([remessaId])
+  @@index([produtoId])
+  @@index([loteId])
+  @@map("remessa_itens")
+}
+
+model NotaFiscal {
+  id                String    @id @default(cuid())
+  tenantId          String
+  empresaEmitenteId String
+  pedidoId          String
+  clienteId         String
+  numero            String?
+  serie             String?
+  modelo            String    @default("55")
+  naturezaOperacao  String?
+  status            String    @default("pendente")
+  chaveAcesso       String?
+  protocolo         String?
+  valorTotal        Decimal   @default(0) @db.Decimal(15, 2)
+  ambiente          String    @default("homologacao")
+  plugnotasId       String?
+  xmlUrl            String?
+  danfeUrl          String?
+  mensagemRetorno   String?
+  dataEmissao       DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  deletedAt         DateTime?
+
+  tenant          Tenant  @relation(fields: [tenantId], references: [id])
+  empresaEmitente Empresa @relation("NotaEmpresaEmitente", fields: [empresaEmitenteId], references: [id])
+  pedido          Pedido  @relation(fields: [pedidoId], references: [id])
+  cliente         Cliente @relation(fields: [clienteId], references: [id])
+
+  itens   NotaFiscalItem[]
+  eventos NotaFiscalEvento[]
+
+  @@index([tenantId])
+  @@index([empresaEmitenteId])
+  @@index([pedidoId])
+  @@index([clienteId])
+  @@map("notas_fiscais")
+}
+
+model NotaFiscalItem {
+  id            String   @id @default(cuid())
+  tenantId      String
+  notaFiscalId  String
+  produtoId     String
+  descricao     String
+  ncm           String?
+  cfop          String?
+  cstCsosn      String?
+  quantidade    Decimal  @db.Decimal(15, 3)
+  valorUnitario Decimal  @db.Decimal(15, 2)
+  valorTotal    Decimal  @db.Decimal(15, 2)
+  impostos      Json
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  tenant     Tenant     @relation(fields: [tenantId], references: [id])
+  notaFiscal NotaFiscal @relation(fields: [notaFiscalId], references: [id], onDelete: Cascade)
+  produto    Produto    @relation(fields: [produtoId], references: [id])
+
+  @@index([tenantId])
+  @@index([notaFiscalId])
+  @@index([produtoId])
+  @@map("nota_fiscal_itens")
+}
+
+model NotaFiscalEvento {
+  id           String   @id @default(cuid())
+  tenantId     String
+  notaFiscalId String
+  tipo         String
+  payload      Json
+  data         DateTime @default(now())
+  createdAt    DateTime @default(now())
+
+  tenant     Tenant     @relation(fields: [tenantId], references: [id])
+  notaFiscal NotaFiscal @relation(fields: [notaFiscalId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([notaFiscalId])
+  @@map("nota_fiscal_eventos")
+}
+
+model AuditoriaLog {
+  id          String   @id @default(cuid())
+  tenantId    String
+  usuarioId   String?
+  entidade    String
+  entidadeId  String
+  acao        String
+  dadosAntes  Json?
+  dadosDepois Json?
+  data        DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId, data])
+  @@index([usuarioId])
+  @@index([entidade, entidadeId])
+  @@map("auditoria_logs")
 }

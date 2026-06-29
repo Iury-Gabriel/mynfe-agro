@@ -21,6 +21,7 @@ function AuthConsumer() {
       <span data-testid="loading">{String(isLoading)}</span>
       <span data-testid="authenticated">{String(isAuthenticated)}</span>
       <span data-testid="user">{user?.name ?? 'nenhum'}</span>
+      <span data-testid="empresas">{(user?.empresaIds ?? []).join(',')}</span>
       <button onClick={() => void refresh()}>refresh</button>
     </div>
   )
@@ -110,6 +111,27 @@ describe('AuthProvider', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('user').textContent).toBe('Test')
+    })
+    expect(screen.getByTestId('empresas').textContent).toBe('')
+  })
+
+  it('expõe empresaIds quando presentes na sessão', async () => {
+    mockGet.mockResolvedValue({
+      data: {
+        user: { id: 'u1', email: 'test@example.com', name: 'Test', emailVerified: true },
+        permissions: [],
+        empresaIds: ['e1', 'e2'],
+      },
+    })
+
+    renderWithProviders(
+      <AuthProvider>
+        <AuthConsumer />
+      </AuthProvider>,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByTestId('empresas').textContent).toBe('e1,e2')
     })
   })
 

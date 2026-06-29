@@ -41,7 +41,7 @@ export function ForgotPasswordPage(): ReactElement {
 
   if (forgotPassword.isSuccess) {
     return (
-      <div className="w-full max-w-sm rounded-lg border border-border bg-card p-6 shadow-sm sm:p-8">
+      <div className="w-full max-w-sm rounded-2xl border border-border/60 bg-card/70 p-6 shadow-xl shadow-black/20 backdrop-blur-sm sm:p-8">
         <div className="space-y-4 text-center">
           <div className="space-y-1">
             <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">E-mail enviado!</h1>
@@ -51,7 +51,7 @@ export function ForgotPasswordPage(): ReactElement {
           </div>
           <Link
             to="/sign-in"
-            className="inline-block text-sm text-muted-foreground underline-offset-4 hover:underline"
+            className="inline-block text-sm text-primary underline-offset-4 hover:underline"
           >
             Voltar para login
           </Link>
@@ -61,7 +61,7 @@ export function ForgotPasswordPage(): ReactElement {
   }
 
   return (
-    <div className="w-full max-w-sm rounded-lg border border-border bg-card p-6 shadow-sm sm:p-8">
+    <div className="w-full max-w-sm rounded-2xl border border-border/60 bg-card/70 p-6 shadow-xl shadow-black/20 backdrop-blur-sm sm:p-8">
       <div className="mb-6 space-y-1">
         <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">Esqueceu a senha?</h1>
         <p className="text-sm text-muted-foreground">
@@ -98,7 +98,7 @@ export function ForgotPasswordPage(): ReactElement {
         </Button>
 
         <p className="text-center text-sm text-muted-foreground">
-          <Link to="/sign-in" className="underline-offset-4 hover:underline">
+          <Link to="/sign-in" className="text-primary underline-offset-4 hover:underline">
             Voltar para login
           </Link>
         </p>
