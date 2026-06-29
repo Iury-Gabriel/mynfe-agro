@@ -29,7 +29,7 @@ jobs:
       matrix:
         task: [lint, typecheck, build]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 2
 
@@ -62,7 +62,7 @@ jobs:
     name: test-unit
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 2
 
@@ -92,7 +92,7 @@ jobs:
     name: Security audit
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
@@ -117,7 +117,7 @@ jobs:
     outputs:
       run: ${{ steps.scope.outputs.run }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -171,7 +171,7 @@ jobs:
       AUTH_SECRET: ci-auth-secret-at-least-32-bytes-long!!
       AUTH_BASE_URL: http://localhost:3333
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 2
 
