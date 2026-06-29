@@ -47,11 +47,22 @@ export class RolesController {
     private readonly deleteRole: DeleteRoleUseCase,
   ) {}
 
+  private requireTenant(user: SessionUser): string {
+    if (!user.tenantId) throw CustomHttpException.forbidden()
+    return user.tenantId
+  }
+
   @Get()
   async list(
     @Query(new ZodValidationPipe(listRolesQuerySchema)) query: z.infer<typeof listRolesQuerySchema>,
+    @CurrentUser() user: SessionUser,
   ) {
-    const result = await this.listRoles.execute({ cursor: query.cursor, limit: query.limit })
+    const tenantId = this.requireTenant(user)
+    const result = await this.listRoles.execute({
+      tenantId,
+      cursor: query.cursor,
+      limit: query.limit,
+    })
     if (result.isLeft()) throw CustomHttpException.fromUseCaseError(result.value)
     const { roles, nextCursor } = result.value
     return {

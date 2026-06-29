@@ -7,7 +7,7 @@ import { right, type Either } from '@/core/either'
 import { UserRepository } from '@/domain/application/repositories/user-repository'
 import { UserRoleAssignmentRepository } from '@/domain/application/repositories/user-role-assignment-repository'
 
-export type ListUsersInput = CursorPaginationParams
+export type ListUsersInput = CursorPaginationParams & { tenantId: string }
 
 export interface UserWithRoles {
   user: User
@@ -29,7 +29,10 @@ export class ListUsersUseCase {
   ) {}
 
   async execute(input: ListUsersInput): Promise<ListUsersResult> {
-    const { users, nextCursor } = await this.userRepo.findMany(input)
+    const { users, nextCursor } = await this.userRepo.findMany(input.tenantId, {
+      cursor: input.cursor,
+      limit: input.limit,
+    })
     const roleIdsByUser = await this.assignmentRepo.findRoleIdsByUserIds(
       users.map((user) => user.id.toString()),
     )

@@ -5,6 +5,8 @@ import { beforeEach, describe, expect, it } from 'vitest'
 
 import { ListUsersUseCase } from './list-users-use-case'
 
+const TENANT = 'tenant-1'
+
 describe(ListUsersUseCase.name, () => {
   let userRepo: InMemoryUserRepository
   let assignmentRepo: InMemoryUserRoleAssignmentRepository
@@ -17,7 +19,7 @@ describe(ListUsersUseCase.name, () => {
   })
 
   it('retorna lista vazia e nextCursor null quando não há usuários', async () => {
-    const result = await sut.execute({})
+    const result = await sut.execute({ tenantId: TENANT })
 
     expect(result.isRight()).toBe(true)
     if (result.isRight()) {
@@ -29,11 +31,12 @@ describe(ListUsersUseCase.name, () => {
   it('lista usuários com seus roles', async () => {
     const user1 = makeUser({ email: 'ada@example.com', id: 'user-1' })
     const user2 = makeUser({ email: 'grace@example.com', id: 'user-2' })
-    userRepo.users.push(user1, user2)
+    userRepo.register(user1, TENANT)
+    userRepo.register(user2, TENANT)
     await assignmentRepo.replaceAll('user-1', ['role-admin', 'role-gestor'])
     await assignmentRepo.replaceAll('user-2', ['role-viewer'])
 
-    const result = await sut.execute({})
+    const result = await sut.execute({ tenantId: TENANT })
 
     expect(result.isRight()).toBe(true)
     if (result.isRight()) {
@@ -46,9 +49,9 @@ describe(ListUsersUseCase.name, () => {
   })
 
   it('retorna roleIds vazio para usuários sem cargo', async () => {
-    userRepo.users.push(makeUser({ email: 'sem-cargo@example.com', id: 'user-1' }))
+    userRepo.register(makeUser({ email: 'sem-cargo@example.com', id: 'user-1' }), TENANT)
 
-    const result = await sut.execute({})
+    const result = await sut.execute({ tenantId: TENANT })
 
     expect(result.isRight()).toBe(true)
     if (result.isRight()) {
@@ -56,18 +59,34 @@ describe(ListUsersUseCase.name, () => {
     }
   })
 
+  it('isola por tenant: não retorna usuários de outro tenant', async () => {
+    userRepo.register(makeUser({ email: 'a@t1.com', id: 'user-t1' }), TENANT)
+    userRepo.register(makeUser({ email: 'b@t2.com', id: 'user-t2' }), 'tenant-2')
+
+    const result = await sut.execute({ tenantId: TENANT })
+
+    expect(result.isRight()).toBe(true)
+    if (result.isRight()) {
+      expect(result.value.users).toHaveLength(1)
+      expect(result.value.users[0].user.id.toString()).toBe('user-t1')
+    }
+  })
+
   it('pagina por cursor: primeira página retorna nextCursor e a próxima continua de onde parou', async () => {
     for (let i = 1; i <= 30; i++) {
-      userRepo.users.push(makeUser({ email: `user${i}@example.com`, id: `user-${String(i).padStart(2, '0')}` }))
+      userRepo.register(
+        makeUser({ email: `user${i}@example.com`, id: `user-${String(i).padStart(2, '0')}` }),
+        TENANT,
+      )
     }
 
-    const first = await sut.execute({ limit: 10 })
+    const first = await sut.execute({ tenantId: TENANT, limit: 10 })
     expect(first.isRight()).toBe(true)
     if (!first.isRight()) return
     expect(first.value.users).toHaveLength(10)
     expect(first.value.nextCursor).not.toBeNull()
 
-    const second = await sut.execute({ limit: 10, cursor: first.value.nextCursor! })
+    const second = await sut.execute({ tenantId: TENANT, limit: 10, cursor: first.value.nextCursor! })
     expect(second.isRight()).toBe(true)
     if (!second.isRight()) return
     expect(second.value.users).toHaveLength(10)
@@ -79,10 +98,10 @@ describe(ListUsersUseCase.name, () => {
 
   it('retorna nextCursor null na última página', async () => {
     for (let i = 1; i <= 5; i++) {
-      userRepo.users.push(makeUser({ email: `user${i}@example.com`, id: `user-${i}` }))
+      userRepo.register(makeUser({ email: `user${i}@example.com`, id: `user-${i}` }), TENANT)
     }
 
-    const result = await sut.execute({ limit: 10 })
+    const result = await sut.execute({ tenantId: TENANT, limit: 10 })
 
     expect(result.isRight()).toBe(true)
     if (result.isRight()) {
@@ -92,7 +111,7 @@ describe(ListUsersUseCase.name, () => {
   })
 
   it('sempre retorna Right (sem erros possíveis)', async () => {
-    const result = await sut.execute({})
+    const result = await sut.execute({ tenantId: TENANT })
 
     expect(result.isRight()).toBe(true)
     expect(result.isLeft()).toBe(false)

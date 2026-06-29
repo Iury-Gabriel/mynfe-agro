@@ -49,6 +49,27 @@ async function createTestUser(prisma: PrismaClient): Promise<string> {
   return userId
 }
 
+async function createTenant(prisma: PrismaClient): Promise<string> {
+  const tenant = await prisma.tenant.create({ data: { nome: `tenant-${randomUUID()}` } })
+  return tenant.id
+}
+
+async function seedRole(prisma: PrismaClient, tenantId: string): Promise<string> {
+  const id = randomUUID()
+  await prisma.role.create({
+    data: {
+      id,
+      name: `role-${randomUUID()}`,
+      description: null,
+      isSystem: false,
+      tenantId,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
+  })
+  return id
+}
+
 describe(PrismaRoleRepository.name, () => {
   let prisma: PrismaClient
   let sut: PrismaRoleRepository
@@ -61,6 +82,7 @@ describe(PrismaRoleRepository.name, () => {
     await prisma.role.deleteMany()
     await prisma.auditEvent.deleteMany()
     await prisma.user.deleteMany()
+    await prisma.tenant.deleteMany()
   })
 
   describe('findById', () => {
@@ -103,33 +125,32 @@ describe(PrismaRoleRepository.name, () => {
 
   describe('findMany', () => {
     it('returns first page with nextCursor when there are more rows', async () => {
-      for (const r of [makeRole(), makeRole(), makeRole()]) {
-        await sut.save(r, seedAudit)
-      }
+      const tenantId = await createTenant(prisma)
+      for (let i = 0; i < 3; i++) await seedRole(prisma, tenantId)
 
-      const result = await sut.findMany({ limit: 2 })
+      const result = await sut.findMany(tenantId, { limit: 2 })
 
       expect(result.roles).toHaveLength(2)
       expect(result.nextCursor).not.toBeNull()
     })
 
     it('returns nextCursor null on the last page', async () => {
-      await sut.save(makeRole(), seedAudit)
-      await sut.save(makeRole(), seedAudit)
+      const tenantId = await createTenant(prisma)
+      await seedRole(prisma, tenantId)
+      await seedRole(prisma, tenantId)
 
-      const result = await sut.findMany({ limit: 10 })
+      const result = await sut.findMany(tenantId, { limit: 10 })
 
       expect(result.roles).toHaveLength(2)
       expect(result.nextCursor).toBeNull()
     })
 
     it('continues from the cursor without repeating rows (orders by id desc)', async () => {
-      for (const r of [makeRole(), makeRole(), makeRole(), makeRole(), makeRole()]) {
-        await sut.save(r, seedAudit)
-      }
+      const tenantId = await createTenant(prisma)
+      for (let i = 0; i < 5; i++) await seedRole(prisma, tenantId)
 
-      const first = await sut.findMany({ limit: 2 })
-      const second = await sut.findMany({ limit: 2, cursor: first.nextCursor! })
+      const first = await sut.findMany(tenantId, { limit: 2 })
+      const second = await sut.findMany(tenantId, { limit: 2, cursor: first.nextCursor! })
 
       const firstIds = first.roles.map((r) => r.id.toString())
       const secondIds = second.roles.map((r) => r.id.toString())
@@ -137,6 +158,19 @@ describe(PrismaRoleRepository.name, () => {
       for (const id of secondIds) {
         expect(id < firstIds[firstIds.length - 1]).toBe(true)
       }
+    })
+
+    it('isola por tenant: não retorna roles de outro tenant', async () => {
+      const tenantA = await createTenant(prisma)
+      const tenantB = await createTenant(prisma)
+      const roleA = await seedRole(prisma, tenantA)
+      await seedRole(prisma, tenantB)
+      await seedRole(prisma, tenantB)
+
+      const result = await sut.findMany(tenantA, { limit: 10 })
+
+      expect(result.roles).toHaveLength(1)
+      expect(result.roles[0].id.toString()).toBe(roleA)
     })
   })
 
