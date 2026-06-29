@@ -81,6 +81,24 @@ describe('SidebarNav', () => {
     expect(link.className).toContain('text-sidebar-foreground/70')
   })
 
+  it('mostra o grupo Plataforma com Tenants quando o usuário é super-admin', () => {
+    useAuthMock.mockReturnValue({ user: { permissions: [], isSuperAdmin: true } })
+
+    renderWithProviders(<SidebarNav />)
+
+    expect(screen.getByText('Plataforma')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Tenants' })).toBeInTheDocument()
+  })
+
+  it('esconde o grupo Plataforma quando o usuário não é super-admin', () => {
+    useAuthMock.mockReturnValue({ user: { permissions: ['admin:users'], isSuperAdmin: false } })
+
+    renderWithProviders(<SidebarNav />)
+
+    expect(screen.queryByText('Plataforma')).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Tenants' })).not.toBeInTheDocument()
+  })
+
   it('invoca onNavigate ao clicar num item de navegação', () => {
     useAuthMock.mockReturnValue({ user: { permissions: ['admin:users'] } })
     const onNavigate = vi.fn()

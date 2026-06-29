@@ -45,7 +45,10 @@ export function EmpresaSwitcher(): ReactElement | null {
 
   return (
     <Select value={activeEmpresaId ?? undefined} onValueChange={handleChange}>
-      <SelectTrigger className="h-10 w-[200px]" aria-label="Empresa ativa">
+      <SelectTrigger
+        className="h-10 w-auto max-w-[60vw] gap-2 border-transparent bg-transparent px-2 hover:bg-white/5 focus:ring-1 sm:w-[200px] sm:max-w-none"
+        aria-label="Empresa ativa"
+      >
         <span className="flex items-center gap-2 truncate">
           <Building2 className="size-4 shrink-0 text-muted-foreground" />
           <SelectValue placeholder="Selecionar empresa" />

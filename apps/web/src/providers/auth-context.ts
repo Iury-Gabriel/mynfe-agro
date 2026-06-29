@@ -5,6 +5,7 @@ export interface AuthUser {
   email: string
   name: string
   emailVerified: boolean
+  isSuperAdmin?: boolean
   role?: string | null
   permissions?: readonly string[]
   empresaIds?: readonly string[]

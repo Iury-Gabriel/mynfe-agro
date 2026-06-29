@@ -50,7 +50,7 @@ describe('router wiring', () => {
   it('invoca os loaders de rota (privateLoader + requirePermission)', async () => {
     mockGet.mockResolvedValue({
       data: {
-        user: { id: 'u1' },
+        user: { id: 'u1', isSuperAdmin: true },
         permissions: [
           'admin:roles',
           'admin:users',

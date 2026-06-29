@@ -96,6 +96,13 @@ export function SignInPage(): ReactElement {
           {signIn.isPending ? 'Entrando…' : 'Entrar'}
         </Button>
       </form>
+
+      <p className="mt-6 text-center text-sm text-muted-foreground">
+        Não tem conta?{' '}
+        <Link to="/register" className="font-medium text-primary underline-offset-4 hover:underline">
+          Cadastre-se
+        </Link>
+      </p>
     </div>
   )
 }

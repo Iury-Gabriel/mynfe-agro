@@ -15,6 +15,7 @@ async function fetchSession(): Promise<AuthUser | null> {
     if (!data?.user) return null
     return {
       ...data.user,
+      isSuperAdmin: data.user.isSuperAdmin ?? false,
       permissions: data.permissions ?? [],
       empresaIds: data.empresaIds ?? [],
     }

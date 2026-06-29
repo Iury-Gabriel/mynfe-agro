@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 vi.mock('@/lib/api-client', () => ({ api: { get: vi.fn() } }))
 
 import { api } from '@/lib/api-client'
-import { privateLoader, requirePermission } from '@/router'
+import { privateLoader, requirePermission, requireSuperAdmin } from '@/router'
 
 const mockGet = vi.mocked(api.get)
 
@@ -83,6 +83,46 @@ describe('requirePermission', () => {
     mockGet.mockRejectedValue(new Error('network'))
 
     const res = await caught(requirePermission('admin:roles'))
+    expect(res.headers.get('Location')).toBe('/sign-in')
+  })
+})
+
+describe('requireSuperAdmin', () => {
+  beforeEach(() => {
+    mockGet.mockReset()
+  })
+
+  it('retorna null quando o user é super-admin', async () => {
+    mockGet.mockResolvedValue({ data: { user: { id: 'u1', isSuperAdmin: true } } })
+
+    await expect(requireSuperAdmin()).resolves.toBeNull()
+  })
+
+  it('redireciona pro sign-in quando não há user', async () => {
+    mockGet.mockResolvedValue({ data: { user: null } })
+
+    const res = await caught(requireSuperAdmin())
+    expect(res.headers.get('Location')).toBe('/sign-in')
+  })
+
+  it('redireciona pro /app quando o user não é super-admin', async () => {
+    mockGet.mockResolvedValue({ data: { user: { id: 'u1', isSuperAdmin: false } } })
+
+    const res = await caught(requireSuperAdmin())
+    expect(res.headers.get('Location')).toBe('/app')
+  })
+
+  it('redireciona pro /app quando isSuperAdmin não vem na sessão', async () => {
+    mockGet.mockResolvedValue({ data: { user: { id: 'u1' } } })
+
+    const res = await caught(requireSuperAdmin())
+    expect(res.headers.get('Location')).toBe('/app')
+  })
+
+  it('redireciona pro sign-in quando a requisição falha', async () => {
+    mockGet.mockRejectedValue(new Error('network'))
+
+    const res = await caught(requireSuperAdmin())
     expect(res.headers.get('Location')).toBe('/sign-in')
   })
 })

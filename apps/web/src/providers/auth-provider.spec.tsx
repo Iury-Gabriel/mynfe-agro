@@ -22,6 +22,7 @@ function AuthConsumer() {
       <span data-testid="authenticated">{String(isAuthenticated)}</span>
       <span data-testid="user">{user?.name ?? 'nenhum'}</span>
       <span data-testid="empresas">{(user?.empresaIds ?? []).join(',')}</span>
+      <span data-testid="super-admin">{String(user?.isSuperAdmin)}</span>
       <button onClick={() => void refresh()}>refresh</button>
     </div>
   )
@@ -132,6 +133,49 @@ describe('AuthProvider', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('empresas').textContent).toBe('e1,e2')
+    })
+  })
+
+  it('normaliza isSuperAdmin para false quando ausente e expõe true quando presente', async () => {
+    mockGet.mockResolvedValueOnce({
+      data: {
+        user: { id: 'u1', email: 'test@example.com', name: 'Test', emailVerified: true },
+        permissions: [],
+      },
+    })
+
+    const { unmount } = renderWithProviders(
+      <AuthProvider>
+        <AuthConsumer />
+      </AuthProvider>,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByTestId('super-admin').textContent).toBe('false')
+    })
+    unmount()
+
+    mockGet.mockResolvedValueOnce({
+      data: {
+        user: {
+          id: 'u1',
+          email: 'test@example.com',
+          name: 'Test',
+          emailVerified: true,
+          isSuperAdmin: true,
+        },
+        permissions: [],
+      },
+    })
+
+    renderWithProviders(
+      <AuthProvider>
+        <AuthConsumer />
+      </AuthProvider>,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByTestId('super-admin').textContent).toBe('true')
     })
   })
 
