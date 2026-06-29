@@ -105,8 +105,7 @@ export function PedidosPage(): ReactElement {
 
   const totalPages = data?.totalPages ?? 1
 
-  function handleCreate(payload: VendaFormPayload): void {
-    if (!empresaId) return
+  function handleCreate(payload: VendaFormPayload, empresaId: string): void {
     criar.mutate(
       {
         empresaId,
@@ -280,7 +279,7 @@ export function PedidosPage(): ReactElement {
           description="Cliente, itens e preço (resolvido automaticamente se vazio). A empresa ativa é a faturadora."
           submitLabel="Criar pedido"
           showConfirmar
-          onSubmit={handleCreate}
+          onSubmit={(payload) => handleCreate(payload, empresaId)}
           isPending={criar.isPending}
         />
       )}
@@ -288,9 +287,7 @@ export function PedidosPage(): ReactElement {
       {detalhe && (
         <PedidoDetalheDialog
           open={!!detalhe}
-          onOpenChange={(open) => {
-            if (!open) setDetalhe(null)
-          }}
+          onOpenChange={() => setDetalhe(null)}
           empresaId={empresaId}
           pedido={detalhe}
         />
@@ -299,9 +296,7 @@ export function PedidosPage(): ReactElement {
       {pending && (
         <ConfirmActionDialog
           open={!!pending}
-          onOpenChange={(open) => {
-            if (!open) setPending(null)
-          }}
+          onOpenChange={() => setPending(null)}
           title={pending.kind === 'confirmar' ? 'Confirmar pedido' : 'Cancelar pedido'}
           description={
             pending.kind === 'confirmar'

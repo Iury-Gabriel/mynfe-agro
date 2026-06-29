@@ -244,4 +244,28 @@ describe('AtividadesCampoPage', () => {
     await user.click(screen.getByRole('button', { name: 'Anterior' }))
     expect(await screen.findByText('Primeira')).toBeInTheDocument()
   })
+
+  it('usa defaults de paginação quando a resposta omite os metadados', async () => {
+    vi.mocked(api.get).mockResolvedValue({ data: { atividades: [makeAtividade()] } })
+    renderWithProviders(<AtividadesCampoPage />)
+
+    await screen.findByText('Plantio')
+    expect(screen.getByText(/Página 1 de 1 · 0 atividades/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Anterior' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Próxima' })).toBeDisabled()
+  })
+
+  it('filtra ignorando atividades sem observações', async () => {
+    mockList([
+      makeAtividade({ id: 'at1', tipo: 'plantio', observacoes: 'Alpha' }),
+      makeAtividade({ id: 'at2', tipo: 'irrigacao', observacoes: null }),
+    ])
+    const user = userEvent.setup({ delay: null })
+    renderWithProviders(<AtividadesCampoPage />)
+
+    await screen.findByText('Alpha')
+    await user.type(screen.getByLabelText('Buscar atividades'), 'alpha')
+
+    expect(screen.getByText('Alpha')).toBeInTheDocument()
+  })
 })

@@ -151,6 +151,7 @@ export function ProdutoFormDialog({
             <div className="space-y-1.5">
               <Label htmlFor="produto-tipo">Tipo</Label>
               <Select
+                name="tipo"
                 value={tipo}
                 onValueChange={(v) => setValue('tipo', v as ProdutoTipo, { shouldValidate: true })}
               >

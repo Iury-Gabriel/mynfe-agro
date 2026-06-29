@@ -174,7 +174,7 @@ describe('TabelaPrecosPage', () => {
     await user.click(screen.getByRole('button', { name: /Excluir/ }))
 
     expect(screen.getByRole('heading', { name: 'Excluir preço' })).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Excluir', exact: true }))
+    await user.click(screen.getByRole('button', { name: /^Excluir$/ }))
 
     await waitFor(() => {
       expect(api.delete).toHaveBeenCalledWith('/api/tabela-precos/tp1')
@@ -190,7 +190,7 @@ describe('TabelaPrecosPage', () => {
 
     await screen.findByText('Cliente Alpha')
     await user.click(screen.getByRole('button', { name: /Excluir/ }))
-    await user.click(screen.getByRole('button', { name: 'Excluir', exact: true }))
+    await user.click(screen.getByRole('button', { name: /^Excluir$/ }))
 
     await waitFor(() => {
       expect(toastError).toHaveBeenCalledWith('Não foi possível excluir o preço.')
@@ -250,5 +250,15 @@ describe('TabelaPrecosPage', () => {
 
     await user.click(screen.getByRole('button', { name: 'Anterior' }))
     expect(await screen.findByText('Primeiro')).toBeInTheDocument()
+  })
+
+  it('usa defaults de paginação quando a resposta omite os metadados', async () => {
+    vi.mocked(api.get).mockResolvedValue({ data: { tabelaPrecos: [makePreco()] } })
+    renderWithProviders(<TabelaPrecosPage />)
+
+    await screen.findByText('Cliente Alpha')
+    expect(screen.getByText(/Página 1 de 1 · 0 preços/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Anterior' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Próxima' })).toBeDisabled()
   })
 })

@@ -241,4 +241,14 @@ describe('CustosProducaoPage', () => {
     await user.click(screen.getByRole('button', { name: 'Anterior' }))
     expect(await screen.findByText('Primeira')).toBeInTheDocument()
   })
+
+  it('usa defaults de paginação quando a resposta omite os metadados', async () => {
+    vi.mocked(api.get).mockResolvedValue({ data: { custos: [makeCusto()] } })
+    renderWithProviders(<CustosProducaoPage />)
+
+    await screen.findByText('Sementes de soja')
+    expect(screen.getByText(/Página 1 de 1 · 0 custos/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Anterior' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Próxima' })).toBeDisabled()
+  })
 })

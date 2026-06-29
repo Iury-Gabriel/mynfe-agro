@@ -36,6 +36,37 @@ describe('notas-fiscais-api hooks', () => {
     })
   })
 
+  it('useNotasFiscais sem filtros envia apenas paginação', async () => {
+    vi.mocked(api.get).mockResolvedValue({
+      data: { notas: [], total: 0, page: 1, perPage: 20, totalPages: 1 },
+    })
+
+    const { result } = renderHook(() => useNotasFiscais({ empresaId: 'e1' }), {
+      wrapper: createWrapper('/'),
+    })
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(api.get).toHaveBeenCalledWith('/api/notas-fiscais', {
+      params: { empresaId: 'e1', page: 1, perPage: 20 },
+    })
+  })
+
+  it('useNotasFiscais inclui clienteId e pedidoId quando informados', async () => {
+    vi.mocked(api.get).mockResolvedValue({
+      data: { notas: [], total: 0, page: 1, perPage: 20, totalPages: 1 },
+    })
+
+    const { result } = renderHook(
+      () => useNotasFiscais({ empresaId: 'e1', filtros: { clienteId: 'cli1', pedidoId: 'pd1' } }),
+      { wrapper: createWrapper('/') },
+    )
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(api.get).toHaveBeenCalledWith('/api/notas-fiscais', {
+      params: { empresaId: 'e1', page: 1, perPage: 20, clienteId: 'cli1', pedidoId: 'pd1' },
+    })
+  })
+
   it('useNotasFiscais não dispara quando empresaId é null', () => {
     renderHook(() => useNotasFiscais({ empresaId: null }), { wrapper: createWrapper('/') })
     expect(api.get).not.toHaveBeenCalled()

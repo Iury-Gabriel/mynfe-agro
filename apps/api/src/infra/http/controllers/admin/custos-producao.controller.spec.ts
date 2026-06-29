@@ -3,7 +3,7 @@ import { Test } from '@nestjs/testing'
 import { makeCustoProducao } from '@test/factories/make-custo-producao'
 import { InMemoryCustoProducaoRepository } from '@test/repositories/in-memory-custo-producao-repository'
 import request from 'supertest'
-import { describe, beforeEach, afterAll, it, expect } from 'vitest'
+import { describe, beforeEach, afterAll, it, expect, vi } from 'vitest'
 
 import { CustosProducaoController } from './custos-producao.controller'
 
@@ -96,6 +96,12 @@ describe(CustosProducaoController.name, () => {
       const res = await request(app.getHttpServer()).get('/custos-producao')
       expect(res.status).toBe(403)
     })
+
+    it('retorna 500 quando o repositório falha na listagem', async () => {
+      vi.spyOn(repository, 'count').mockRejectedValueOnce(new Error('db down'))
+      const res = await request(app.getHttpServer()).get('/custos-producao')
+      expect(res.status).toBe(500)
+    })
   })
 
   describe('POST /custos-producao', () => {
@@ -167,6 +173,13 @@ describe(CustosProducaoController.name, () => {
       currentUser = { ...mockUser, permissions: ['custo:read'] }
       const res = await request(app.getHttpServer()).delete('/custos-producao/custo-1')
       expect(res.status).toBe(403)
+    })
+
+    it('retorna 500 quando o repositório falha no soft delete', async () => {
+      await repository.create(makeCustoProducao({ id: 'custo-1', tenantId: 'tenant-1' }))
+      repository.shouldFailOnSave = true
+      const res = await request(app.getHttpServer()).delete('/custos-producao/custo-1')
+      expect(res.status).toBe(500)
     })
   })
 })

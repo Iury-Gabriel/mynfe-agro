@@ -3,7 +3,7 @@ import { Test } from '@nestjs/testing'
 import { makeSafra } from '@test/factories/make-safra'
 import { InMemorySafraRepository } from '@test/repositories/in-memory-safra-repository'
 import request from 'supertest'
-import { describe, beforeEach, afterAll, it, expect } from 'vitest'
+import { describe, beforeEach, afterAll, it, expect, vi } from 'vitest'
 
 import { SafrasController } from './safras.controller'
 
@@ -95,6 +95,12 @@ describe(SafrasController.name, () => {
       currentUser = { ...mockUser, tenantId: null }
       const res = await request(app.getHttpServer()).get('/safras')
       expect(res.status).toBe(403)
+    })
+
+    it('retorna 500 quando o repositório falha na listagem', async () => {
+      vi.spyOn(repository, 'count').mockRejectedValueOnce(new Error('db down'))
+      const res = await request(app.getHttpServer()).get('/safras')
+      expect(res.status).toBe(500)
     })
   })
 
@@ -206,6 +212,13 @@ describe(SafrasController.name, () => {
       currentUser = { ...mockUser, permissions: ['safra:read'] }
       const res = await request(app.getHttpServer()).delete('/safras/safra-1')
       expect(res.status).toBe(403)
+    })
+
+    it('retorna 500 quando o repositório falha no soft delete', async () => {
+      await repository.create(makeSafra({ id: 'safra-1', tenantId: 'tenant-1' }))
+      repository.shouldFailOnSave = true
+      const res = await request(app.getHttpServer()).delete('/safras/safra-1')
+      expect(res.status).toBe(500)
     })
   })
 })

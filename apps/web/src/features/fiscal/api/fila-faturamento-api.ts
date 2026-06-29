@@ -41,7 +41,7 @@ export function useFilaFaturamento({
     queryKey: [...FILA_FATURAMENTO_QUERY_KEY, { empresaId, clienteId, page, perPage }],
     enabled: !!empresaId,
     queryFn: async () => {
-      const params: Record<string, string | number> = { empresaId: empresaId ?? '', page, perPage }
+      const params: Record<string, string | number | null> = { empresaId, page, perPage }
       if (clienteId) params.clienteId = clienteId
       const { data } = await api.get<ListFilaResponse>('/api/fila-faturamento', { params })
       return data

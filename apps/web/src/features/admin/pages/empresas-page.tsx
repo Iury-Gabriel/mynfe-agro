@@ -207,9 +207,9 @@ export function EmpresasPage(): ReactElement {
         <EmpresaStatusDialog
           empresa={selected}
           open={statusOpen}
-          onOpenChange={(open) => {
-            setStatusOpen(open)
-            if (!open) setSelected(null)
+          onOpenChange={() => {
+            setStatusOpen(false)
+            setSelected(null)
           }}
         />
       )}
@@ -219,9 +219,9 @@ export function EmpresasPage(): ReactElement {
           empresa={selected}
           canEdit={canUpdate}
           open={fiscalOpen}
-          onOpenChange={(open) => {
-            setFiscalOpen(open)
-            if (!open) setSelected(null)
+          onOpenChange={() => {
+            setFiscalOpen(false)
+            setSelected(null)
           }}
         />
       )}

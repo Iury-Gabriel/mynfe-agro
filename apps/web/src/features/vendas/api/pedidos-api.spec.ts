@@ -37,6 +37,52 @@ describe('pedidos-api hooks', () => {
     })
   })
 
+  it('usePedidos sem filtros e com todos os filtros preenchidos monta os params', async () => {
+    vi.mocked(api.get).mockResolvedValue({
+      data: { pedidos: [], total: 0, page: 1, perPage: 20, totalPages: 1 },
+    })
+
+    const { result } = renderHook(
+      () =>
+        usePedidos({
+          empresaId: 'e1',
+          filtros: {
+            clienteId: 'cli-1',
+            periodoInicio: '2026-06-01',
+            periodoFim: '2026-06-30',
+          },
+        }),
+      { wrapper: createWrapper('/') },
+    )
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(api.get).toHaveBeenCalledWith('/api/pedidos', {
+      params: {
+        empresaId: 'e1',
+        page: 1,
+        perPage: 20,
+        clienteId: 'cli-1',
+        periodoInicio: '2026-06-01',
+        periodoFim: '2026-06-30',
+      },
+    })
+  })
+
+  it('usePedidos sem filtros não adiciona params extras', async () => {
+    vi.mocked(api.get).mockResolvedValue({
+      data: { pedidos: [], total: 0, page: 1, perPage: 20, totalPages: 1 },
+    })
+
+    const { result } = renderHook(() => usePedidos({ empresaId: 'e1' }), {
+      wrapper: createWrapper('/'),
+    })
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(api.get).toHaveBeenCalledWith('/api/pedidos', {
+      params: { empresaId: 'e1', page: 1, perPage: 20 },
+    })
+  })
+
   it('usePedidos não dispara quando empresaId é null', () => {
     renderHook(() => usePedidos({ empresaId: null }), { wrapper: createWrapper('/') })
     expect(api.get).not.toHaveBeenCalled()

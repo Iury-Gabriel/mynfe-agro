@@ -4,7 +4,7 @@ import { makeFazenda } from '@test/factories/make-fazenda'
 import { InMemoryAuditoriaLogRepository } from '@test/repositories/in-memory-auditoria-log-repository'
 import { InMemoryFazendaRepository } from '@test/repositories/in-memory-fazenda-repository'
 import request from 'supertest'
-import { describe, beforeEach, afterAll, it, expect } from 'vitest'
+import { describe, beforeEach, afterAll, it, expect, vi } from 'vitest'
 
 import { FazendasController } from './fazendas.controller'
 
@@ -100,6 +100,12 @@ describe(FazendasController.name, () => {
       currentUser = { ...mockUser, tenantId: null }
       const res = await request(app.getHttpServer()).get('/fazendas')
       expect(res.status).toBe(403)
+    })
+
+    it('retorna 500 quando o repositório falha na listagem', async () => {
+      vi.spyOn(repository, 'count').mockRejectedValueOnce(new Error('db down'))
+      const res = await request(app.getHttpServer()).get('/fazendas')
+      expect(res.status).toBe(500)
     })
   })
 
@@ -205,6 +211,13 @@ describe(FazendasController.name, () => {
       currentUser = { ...mockUser, permissions: ['fazenda:read'] }
       const res = await request(app.getHttpServer()).delete('/fazendas/fazenda-1')
       expect(res.status).toBe(403)
+    })
+
+    it('retorna 500 quando o repositório falha no soft delete', async () => {
+      await repository.create(makeFazenda({ id: 'fazenda-1', tenantId: 'tenant-1' }))
+      repository.shouldFailOnSave = true
+      const res = await request(app.getHttpServer()).delete('/fazendas/fazenda-1')
+      expect(res.status).toBe(500)
     })
   })
 })

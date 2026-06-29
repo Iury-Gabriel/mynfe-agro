@@ -50,22 +50,17 @@ export function ConsolidacaoPage(): ReactElement {
   const camposCompletos = !!clienteId.trim() && !!periodoInicio && !!periodoFim
 
   function handleGerarPrevia(): void {
-    if (!camposCompletos) {
-      toast.error('Preencha cliente e período para gerar a prévia.')
-      return
-    }
     setPreviewEnabled(true)
     void preview.refetch()
   }
 
-  function handleConsolidar(): void {
-    if (!empresaId || !camposCompletos || !inicioIso || !fimIso) return
+  function handleConsolidar(empresaId: string): void {
     consolidar.mutate(
       {
         empresaId,
         clienteId: clienteId.trim(),
-        periodoInicio: inicioIso,
-        periodoFim: fimIso,
+        periodoInicio: inicioIso!,
+        periodoFim: fimIso!,
       },
       {
         onSuccess: (data) => {
@@ -179,7 +174,7 @@ export function ConsolidacaoPage(): ReactElement {
           </Panel>
         )}
 
-        {canConsolidar && previewEnabled && totalRemessas > 0 && (
+        {canConsolidar && previewEnabled && empresaId && totalRemessas > 0 && (
           <Panel className="border-emerald-500/20 bg-gradient-to-b from-emerald-500/10 to-card/80">
             <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
               <div>
@@ -197,7 +192,7 @@ export function ConsolidacaoPage(): ReactElement {
               <ActionButton
                 variant="primary"
                 disabled={consolidar.isPending}
-                onClick={handleConsolidar}
+                onClick={() => handleConsolidar(empresaId)}
               >
                 <Sparkles /> {consolidar.isPending ? 'Consolidando…' : 'Consolidar e gerar pedido'}
               </ActionButton>

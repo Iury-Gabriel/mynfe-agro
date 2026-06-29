@@ -211,5 +211,8 @@ describe('ColheitasPage', () => {
     expect(screen.getByRole('button', { name: 'Anterior' })).toBeDisabled()
     await user.click(screen.getByRole('button', { name: 'Próxima' }))
     expect(await screen.findByText('Segunda')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Anterior' }))
+    expect(await screen.findByText('Primeira')).toBeInTheDocument()
   })
 })

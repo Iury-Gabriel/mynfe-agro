@@ -37,6 +37,52 @@ describe('remessas-api hooks', () => {
     })
   })
 
+  it('useRemessas sem filtros não adiciona params extras', async () => {
+    vi.mocked(api.get).mockResolvedValue({
+      data: { remessas: [], total: 0, page: 1, perPage: 20, totalPages: 1 },
+    })
+
+    const { result } = renderHook(() => useRemessas({ empresaId: 'e1' }), {
+      wrapper: createWrapper('/'),
+    })
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(api.get).toHaveBeenCalledWith('/api/remessas', {
+      params: { empresaId: 'e1', page: 1, perPage: 20 },
+    })
+  })
+
+  it('useRemessas com cliente e período monta todos os params', async () => {
+    vi.mocked(api.get).mockResolvedValue({
+      data: { remessas: [], total: 0, page: 1, perPage: 20, totalPages: 1 },
+    })
+
+    const { result } = renderHook(
+      () =>
+        useRemessas({
+          empresaId: 'e1',
+          filtros: {
+            clienteId: 'cli-1',
+            periodoInicio: '2026-06-01',
+            periodoFim: '2026-06-30',
+          },
+        }),
+      { wrapper: createWrapper('/') },
+    )
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(api.get).toHaveBeenCalledWith('/api/remessas', {
+      params: {
+        empresaId: 'e1',
+        page: 1,
+        perPage: 20,
+        clienteId: 'cli-1',
+        periodoInicio: '2026-06-01',
+        periodoFim: '2026-06-30',
+      },
+    })
+  })
+
   it('useRemessas não dispara quando empresaId é null', () => {
     renderHook(() => useRemessas({ empresaId: null }), { wrapper: createWrapper('/') })
     expect(api.get).not.toHaveBeenCalled()

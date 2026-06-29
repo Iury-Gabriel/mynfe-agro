@@ -96,6 +96,52 @@ describe('LotesPage', () => {
     expect(await screen.findByText('Erro ao carregar lotes.')).toBeInTheDocument()
   })
 
+  it('recarrega a lista ao tentar novamente', async () => {
+    vi.mocked(api.get).mockRejectedValueOnce(new Error('boom'))
+    mockList([makeLote()])
+    const user = userEvent.setup({ delay: null })
+    renderWithProviders(<LotesPage />)
+
+    await screen.findByText('Erro ao carregar lotes.')
+    await user.click(screen.getByRole('button', { name: 'Tentar novamente' }))
+    expect(await screen.findByText('LT-2026-0142')).toBeInTheDocument()
+  })
+
+  it('navega entre as páginas de lotes', async () => {
+    vi.mocked(api.get).mockImplementation(
+      (url: string, config?: { params?: { page?: number } }) => {
+        if (url === '/api/lotes') {
+          const page = config?.params?.page ?? 1
+          const codigoLote = page === 1 ? 'LT-PAGINA-1' : 'LT-PAGINA-2'
+          return Promise.resolve({
+            data: {
+              lotes: [makeLote({ id: `l${page}`, codigoLote })],
+              total: 2,
+              page,
+              perPage: 20,
+              totalPages: 2,
+            },
+          })
+        }
+        return Promise.resolve({
+          data: {
+            lote: makeLote(),
+            montante: { colheita: null, safraId: null, areaId: null },
+            jusante: { pedidoItens: [], remessaItens: [] },
+          },
+        })
+      },
+    )
+    const user = userEvent.setup({ delay: null })
+    renderWithProviders(<LotesPage />)
+
+    await screen.findByText('LT-PAGINA-1')
+    await user.click(screen.getByRole('button', { name: 'Próxima' }))
+    expect(await screen.findByText('LT-PAGINA-2')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Anterior' }))
+    expect(await screen.findByText('LT-PAGINA-1')).toBeInTheDocument()
+  })
+
   it('lista lotes', async () => {
     mockList([makeLote()])
     renderWithProviders(<LotesPage />)
@@ -109,6 +155,22 @@ describe('LotesPage', () => {
     renderWithProviders(<LotesPage />)
 
     expect(await screen.findByText('Sem validade')).toBeInTheDocument()
+  })
+
+  it('exibe traço para lote sem origem', async () => {
+    mockList([makeLote({ origemTipo: null })])
+    renderWithProviders(<LotesPage />)
+
+    await screen.findByText('LT-2026-0142')
+    expect(screen.getByText('—')).toBeInTheDocument()
+  })
+
+  it('usa o estado local quando a resposta não traz paginação', async () => {
+    vi.mocked(api.get).mockResolvedValue({ data: { lotes: [makeLote()] } })
+    renderWithProviders(<LotesPage />)
+
+    expect(await screen.findByText('LT-2026-0142')).toBeInTheDocument()
+    expect(screen.getByText('Página 1 de 1 · 0 lotes')).toBeInTheDocument()
   })
 
   it('abre a rastreabilidade ao clicar em ver', async () => {
@@ -180,13 +242,23 @@ describe('LotesPage', () => {
   })
 
   it('exibe erro na rastreabilidade com retry', async () => {
+    let rastreabilidadeOk = false
     vi.mocked(api.get).mockImplementation((url: string) => {
       if (url === '/api/lotes') {
         return Promise.resolve({
           data: { lotes: [makeLote()], total: 1, page: 1, perPage: 20, totalPages: 1 },
         })
       }
-      return Promise.reject(new Error('boom'))
+      if (!rastreabilidadeOk) {
+        return Promise.reject(new Error('boom'))
+      }
+      return Promise.resolve({
+        data: {
+          lote: makeLote(),
+          montante: { colheita: makeColheita(), safraId: 'Safra 2026', areaId: 'Talhão A1' },
+          jusante: { pedidoItens: [], remessaItens: [] },
+        },
+      })
     })
     const user = userEvent.setup({ delay: null })
     renderWithProviders(<LotesPage />)
@@ -195,5 +267,9 @@ describe('LotesPage', () => {
     await user.click(screen.getByRole('button', { name: 'Ver rastreabilidade' }))
 
     expect(await screen.findByText('Erro ao carregar rastreabilidade.')).toBeInTheDocument()
+
+    rastreabilidadeOk = true
+    await user.click(screen.getByRole('button', { name: 'Tentar novamente' }))
+    expect(await screen.findByText('Cadeia do lote LT-2026-0142')).toBeInTheDocument()
   })
 })

@@ -92,8 +92,7 @@ export function RemessasPage(): ReactElement {
 
   const totalPages = data?.totalPages ?? 1
 
-  function handleCreate(payload: VendaFormPayload): void {
-    if (!empresaId) return
+  function handleCreate(payload: VendaFormPayload, empresaId: string): void {
     criar.mutate(
       {
         empresaId,
@@ -266,7 +265,7 @@ export function RemessasPage(): ReactElement {
           title="Nova remessa"
           description="Cliente e itens da entrega. A empresa ativa é a faturadora."
           submitLabel="Criar remessa"
-          onSubmit={handleCreate}
+          onSubmit={(payload) => handleCreate(payload, empresaId)}
           isPending={criar.isPending}
         />
       )}
@@ -274,9 +273,7 @@ export function RemessasPage(): ReactElement {
       {detalhe && (
         <RemessaDetalheDialog
           open={!!detalhe}
-          onOpenChange={(open) => {
-            if (!open) setDetalhe(null)
-          }}
+          onOpenChange={() => setDetalhe(null)}
           empresaId={empresaId}
           remessa={detalhe}
         />
@@ -285,9 +282,7 @@ export function RemessasPage(): ReactElement {
       {pending && (
         <ConfirmActionDialog
           open={!!pending}
-          onOpenChange={(open) => {
-            if (!open) setPending(null)
-          }}
+          onOpenChange={() => setPending(null)}
           title={pending.kind === 'entregue' ? 'Marcar como entregue' : 'Cancelar remessa'}
           description={
             pending.kind === 'entregue'

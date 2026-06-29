@@ -124,7 +124,7 @@ export function AjusteEstoqueDialog({
                 control={control}
                 name="direcao"
                 render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
+                  <Select name="direcao" value={field.value} onValueChange={field.onChange}>
                     <SelectTrigger id="ajuste-direcao" aria-label="Tipo">
                       <SelectValue />
                     </SelectTrigger>

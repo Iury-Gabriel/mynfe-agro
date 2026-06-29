@@ -177,7 +177,7 @@ describe('SafrasPage', () => {
         expect.objectContaining({ cultura: 'Algodão' }),
       )
     })
-    const body = vi.mocked(api.patch).mock.calls[0][1] as Record<string, unknown>
+    const body = vi.mocked(api.patch).mock.calls[0]![1] as Record<string, unknown>
     expect(body).not.toHaveProperty('areaId')
     expect(toastSuccess).toHaveBeenCalledWith('Safra atualizada com sucesso.')
   })
@@ -297,5 +297,30 @@ describe('SafrasPage', () => {
 
     await user.click(screen.getByRole('button', { name: 'Anterior' }))
     expect(await screen.findByText('Primeira')).toBeInTheDocument()
+  })
+
+  it('usa defaults de paginação quando a resposta omite os metadados', async () => {
+    vi.mocked(api.get).mockResolvedValue({ data: { safras: [makeSafra()] } })
+    renderWithProviders(<SafrasPage />)
+
+    await screen.findByText('Soja')
+    expect(screen.getByText(/Página 1 de 1 · 0 safras/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Anterior' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Próxima' })).toBeDisabled()
+  })
+
+  it('filtra pela variedade ignorando safras sem variedade', async () => {
+    mockList([
+      makeSafra({ id: 's1', cultura: 'Soja', variedade: 'TMG 7062' }),
+      makeSafra({ id: 's2', cultura: 'Milho', variedade: null }),
+    ])
+    const user = userEvent.setup({ delay: null })
+    renderWithProviders(<SafrasPage />)
+
+    await screen.findByText('Soja')
+    await user.type(screen.getByLabelText('Buscar safras'), 'tmg')
+
+    expect(screen.getByText('Soja')).toBeInTheDocument()
+    expect(screen.queryByText('Milho')).not.toBeInTheDocument()
   })
 })

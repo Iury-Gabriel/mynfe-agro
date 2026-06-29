@@ -160,7 +160,7 @@ describe('AreasPage', () => {
         expect.objectContaining({ identificacao: 'Talhão Editado' }),
       )
     })
-    const body = vi.mocked(api.patch).mock.calls[0][1] as Record<string, unknown>
+    const body = vi.mocked(api.patch).mock.calls[0]![1] as Record<string, unknown>
     expect(body).not.toHaveProperty('fazendaId')
     expect(toastSuccess).toHaveBeenCalledWith('Área atualizada com sucesso.')
   })
@@ -255,5 +255,52 @@ describe('AreasPage', () => {
     expect(await screen.findByText('Segunda')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Anterior' }))
     expect(await screen.findByText('Primeira')).toBeInTheDocument()
+  })
+
+  it('usa defaults de paginação quando a resposta omite os metadados', async () => {
+    vi.mocked(api.get).mockResolvedValue({ data: { areas: [makeArea()] } })
+    renderWithProviders(<AreasPage />)
+
+    await screen.findByText('Talhão 1')
+    expect(screen.getByText(/Página 1 de 1 · 0 áreas/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Anterior' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Próxima' })).toBeDisabled()
+  })
+
+  it('filtra pelo rótulo ignorando áreas sem rótulo', async () => {
+    mockList([
+      makeArea({ id: 'a1', identificacao: 'Alpha', rotulo: 'Milho' }),
+      makeArea({ id: 'a2', identificacao: 'Beta', rotulo: null }),
+    ])
+    const user = userEvent.setup({ delay: null })
+    renderWithProviders(<AreasPage />)
+
+    await screen.findByText('Alpha')
+    await user.type(screen.getByLabelText('Buscar áreas'), 'milho')
+
+    expect(screen.getByText('Alpha')).toBeInTheDocument()
+    expect(screen.queryByText('Beta')).not.toBeInTheDocument()
+  })
+
+  it('exibe o tamanho sem unidade quando a unidade é nula', async () => {
+    mockList([makeArea({ tamanho: 50, unidadeTamanho: null })])
+    renderWithProviders(<AreasPage />)
+
+    expect(await screen.findByText('50')).toBeInTheDocument()
+  })
+
+  it('cancela a exclusão e limpa a seleção', async () => {
+    mockList([makeArea()])
+    const user = userEvent.setup({ delay: null })
+    renderWithProviders(<AreasPage />)
+
+    await screen.findByText('Talhão 1')
+    await user.click(screen.getByRole('button', { name: /Excluir/ }))
+    expect(screen.getByRole('heading', { name: 'Excluir área' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Cancelar' }))
+    await waitFor(() => {
+      expect(screen.queryByRole('heading', { name: 'Excluir área' })).not.toBeInTheDocument()
+    })
   })
 })

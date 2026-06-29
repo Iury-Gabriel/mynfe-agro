@@ -157,4 +157,269 @@ describe('EmitirDanfeDialog', () => {
     expect(screen.getByText('PROTO-123')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Concluir' })).toBeInTheDocument()
   })
+
+  it('fecha ao concluir após emissão', async () => {
+    const onOpenChange = vi.fn()
+    const nota: NotaFiscal = {
+      id: 'nf1',
+      tenantId: 't1',
+      empresaEmitenteId: 'e1',
+      pedidoId: 'pd1',
+      clienteId: 'cli1',
+      status: 'autorizada',
+      numero: '1042',
+      serie: '1',
+      modelo: '55',
+      naturezaOperacao: 'Venda',
+      chaveAcesso: 'CHAVE-AAA',
+      protocolo: 'PROTO-123',
+      valorTotal: 336,
+      ambiente: 'producao',
+      dataEmissao: '2026-06-26T00:00:00.000Z',
+      mensagemRetorno: 'Autorizado o uso da NF-e',
+      danfeUrl: 'https://danfe',
+      xmlUrl: 'https://xml',
+      itens: [],
+      eventos: [],
+      createdAt: '2026-06-26T00:00:00.000Z',
+      updatedAt: '2026-06-26T00:00:00.000Z',
+    }
+    const user = userEvent.setup({ delay: null })
+    renderWithProviders(
+      <EmitirDanfeDialog
+        open
+        onOpenChange={onOpenChange}
+        pedido={pedido}
+        empresaId="e1"
+        nota={nota}
+        isEmitting={false}
+        onConfirm={vi.fn()}
+      />,
+    )
+
+    expect(await screen.findByText('Autorizado o uso da NF-e')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /XML/ })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Concluir' }))
+    expect(onOpenChange).toHaveBeenCalledWith(false)
+  })
+
+  it('mostra estado de emissão e desabilita ações', async () => {
+    renderWithProviders(
+      <EmitirDanfeDialog
+        open
+        onOpenChange={vi.fn()}
+        pedido={pedido}
+        empresaId="e1"
+        nota={null}
+        isEmitting
+        onConfirm={vi.fn()}
+      />,
+    )
+
+    expect(await screen.findByText('Emitindo…')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Cancelar' })).toBeDisabled()
+  })
+
+  it('fecha ao cancelar antes de emitir', async () => {
+    const onOpenChange = vi.fn()
+    const user = userEvent.setup({ delay: null })
+    renderWithProviders(
+      <EmitirDanfeDialog
+        open
+        onOpenChange={onOpenChange}
+        pedido={pedido}
+        empresaId="e1"
+        nota={null}
+        isEmitting={false}
+        onConfirm={vi.fn()}
+      />,
+    )
+
+    await user.click(await screen.findByRole('button', { name: 'Cancelar' }))
+    expect(onOpenChange).toHaveBeenCalledWith(false)
+  })
+
+  it('usa fallbacks do pedido e exibe erro de itens quando os lookups falham', async () => {
+    vi.mocked(api.get).mockImplementation((url: string) => {
+      if (url === '/api/empresas') {
+        return Promise.resolve({ data: { empresas: [] } })
+      }
+      if (url === '/api/clientes') {
+        return Promise.resolve({ data: { clientes: [] } })
+      }
+      if (url === '/api/produtos') {
+        return Promise.resolve({ data: { produtos: [] } })
+      }
+      return Promise.reject(new Error('boom'))
+    })
+
+    renderWithProviders(
+      <EmitirDanfeDialog
+        open
+        onOpenChange={vi.fn()}
+        pedido={pedido}
+        empresaId="e1"
+        nota={null}
+        isEmitting={false}
+        onConfirm={vi.fn()}
+      />,
+    )
+
+    expect(await screen.findByText('Erro ao carregar os itens do pedido.')).toBeInTheDocument()
+    expect(screen.getByText('e1')).toBeInTheDocument()
+    expect(screen.getByText('cli1')).toBeInTheDocument()
+  })
+
+  it('não consulta o pedido enquanto fechado', () => {
+    renderWithProviders(
+      <EmitirDanfeDialog
+        open={false}
+        onOpenChange={vi.fn()}
+        pedido={pedido}
+        empresaId="e1"
+        nota={null}
+        isEmitting={false}
+        onConfirm={vi.fn()}
+      />,
+    )
+
+    expect(api.get).not.toHaveBeenCalledWith('/api/pedidos/pd1', expect.anything())
+  })
+
+  it('usa produção, cliente sem UF e fallback de produto nos itens', async () => {
+    vi.mocked(api.get).mockImplementation((url: string) => {
+      if (url === '/api/empresas') {
+        return Promise.resolve({
+          data: {
+            empresas: [
+              {
+                id: 'e1',
+                razaoSocial: 'Verde Folha',
+                cnpjCpfFormatado: '12.345.678/0001-90',
+                regimeTributario: 'Simples',
+                ambienteFiscal: 'producao',
+                serieNfe: null,
+              },
+            ],
+          },
+        })
+      }
+      if (url === '/api/clientes') {
+        return Promise.resolve({
+          data: {
+            clientes: [
+              { id: 'cli1', razaoSocialNome: 'Quitanda Horta Viva', cnpjCpfFormatado: '—', municipio: 'Campinas', uf: null },
+            ],
+          },
+        })
+      }
+      if (url === '/api/produtos') {
+        return Promise.reject(new Error('boom'))
+      }
+      return Promise.resolve({
+        data: {
+          pedido: {
+            id: 'pd1',
+            itens: [{ id: 'it1', produtoId: 'p-desconhecido', loteId: null, quantidade: 10, precoUnitario: 1, valorTotal: 10 }],
+          },
+        },
+      })
+    })
+
+    renderWithProviders(
+      <EmitirDanfeDialog
+        open
+        onOpenChange={vi.fn()}
+        pedido={pedido}
+        empresaId="e1"
+        nota={null}
+        isEmitting={false}
+        onConfirm={vi.fn()}
+      />,
+    )
+
+    expect(await screen.findByText('Produção')).toBeInTheDocument()
+    expect(await screen.findByText('p-desconhecido')).toBeInTheDocument()
+    expect(screen.getByText('Campinas')).toBeInTheDocument()
+  })
+
+  it('exibe ambiente bruto e cai nos fallbacks quando os lookups não resolvem', async () => {
+    vi.mocked(api.get).mockImplementation((url: string) => {
+      if (url === '/api/empresas') {
+        return Promise.resolve({
+          data: {
+            empresas: [
+              {
+                id: 'e1',
+                razaoSocial: 'Verde Folha',
+                cnpjCpfFormatado: '12.345.678/0001-90',
+                regimeTributario: 'Simples',
+                ambienteFiscal: 'contingencia',
+                serieNfe: 1,
+              },
+            ],
+          },
+        })
+      }
+      return Promise.reject(new Error('boom'))
+    })
+
+    renderWithProviders(
+      <EmitirDanfeDialog
+        open
+        onOpenChange={vi.fn()}
+        pedido={pedido}
+        empresaId="e1"
+        nota={null}
+        isEmitting={false}
+        onConfirm={vi.fn()}
+      />,
+    )
+
+    expect(await screen.findByText('contingencia')).toBeInTheDocument()
+    expect(screen.getByText('cli1')).toBeInTheDocument()
+  })
+
+  it('mostra traços e ambiente bruto quando a nota vem incompleta', async () => {
+    const nota: NotaFiscal = {
+      id: 'nf1',
+      tenantId: 't1',
+      empresaEmitenteId: 'e1',
+      pedidoId: 'pd1',
+      clienteId: 'cli1',
+      status: 'rejeitada',
+      numero: null,
+      serie: null,
+      modelo: '55',
+      naturezaOperacao: 'Venda',
+      chaveAcesso: null,
+      protocolo: null,
+      valorTotal: 336,
+      ambiente: 'desconhecido',
+      dataEmissao: null,
+      mensagemRetorno: null,
+      danfeUrl: null,
+      xmlUrl: null,
+      itens: [],
+      eventos: [],
+      createdAt: '2026-06-26T00:00:00.000Z',
+      updatedAt: '2026-06-26T00:00:00.000Z',
+    }
+
+    renderWithProviders(
+      <EmitirDanfeDialog
+        open
+        onOpenChange={vi.fn()}
+        pedido={pedido}
+        empresaId="e1"
+        nota={nota}
+        isEmitting={false}
+        onConfirm={vi.fn()}
+      />,
+    )
+
+    expect(await screen.findByText('Resultado da emissão')).toBeInTheDocument()
+    expect(screen.getByText('desconhecido')).toBeInTheDocument()
+    expect(screen.getByText('— / —')).toBeInTheDocument()
+  })
 })

@@ -30,7 +30,7 @@ describe('active-empresa', () => {
   })
 
   it('retorna null quando o getItem lança', () => {
-    vi.spyOn(window.localStorage, 'getItem').mockImplementation(() => {
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
       throw new Error('blocked')
     })
     expect(getActiveEmpresaId()).toBeNull()

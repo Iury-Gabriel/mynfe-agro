@@ -65,10 +65,9 @@ export function NotasFiscaisPage(): ReactElement {
 
   const totalPages = data?.totalPages ?? 1
 
-  function handleCancelar(motivo: string | null): void {
-    if (!cancelTarget || !empresaId) return
+  function handleCancelar(target: NotaFiscal, cancelEmpresaId: string, motivo: string | null): void {
     cancelar.mutate(
-      { notaId: cancelTarget.id, empresaId, motivo },
+      { notaId: target.id, empresaId: cancelEmpresaId, motivo },
       {
         onSuccess: () => {
           toast.success('Nota cancelada.')
@@ -184,22 +183,18 @@ export function NotasFiscaisPage(): ReactElement {
       {detailId && (
         <NotaDetailDialog
           open={!!detailId}
-          onOpenChange={(open) => {
-            if (!open) setDetailId(null)
-          }}
+          onOpenChange={() => setDetailId(null)}
           nota={detail.data}
           isLoading={detail.isLoading}
         />
       )}
 
-      {cancelTarget && (
+      {cancelTarget && empresaId && (
         <CancelarNotaDialog
           open={!!cancelTarget}
-          onOpenChange={(open) => {
-            if (!open) setCancelTarget(null)
-          }}
+          onOpenChange={() => setCancelTarget(null)}
           numero={cancelTarget.numero}
-          onConfirm={handleCancelar}
+          onConfirm={(motivo) => handleCancelar(cancelTarget, empresaId, motivo)}
           isPending={cancelar.isPending}
         />
       )}

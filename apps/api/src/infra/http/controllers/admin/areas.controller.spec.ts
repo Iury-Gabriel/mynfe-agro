@@ -4,7 +4,7 @@ import { makeArea } from '@test/factories/make-area'
 import { InMemoryAreaRepository } from '@test/repositories/in-memory-area-repository'
 import { InMemoryAuditoriaLogRepository } from '@test/repositories/in-memory-auditoria-log-repository'
 import request from 'supertest'
-import { describe, beforeEach, afterAll, it, expect } from 'vitest'
+import { describe, beforeEach, afterAll, it, expect, vi } from 'vitest'
 
 import { AreasController } from './areas.controller'
 
@@ -100,6 +100,12 @@ describe(AreasController.name, () => {
       currentUser = { ...mockUser, tenantId: null }
       const res = await request(app.getHttpServer()).get('/areas')
       expect(res.status).toBe(403)
+    })
+
+    it('retorna 500 quando o repositório falha na listagem', async () => {
+      vi.spyOn(repository, 'count').mockRejectedValueOnce(new Error('db down'))
+      const res = await request(app.getHttpServer()).get('/areas')
+      expect(res.status).toBe(500)
     })
   })
 
@@ -206,6 +212,13 @@ describe(AreasController.name, () => {
       currentUser = { ...mockUser, permissions: ['area:read'] }
       const res = await request(app.getHttpServer()).delete('/areas/area-1')
       expect(res.status).toBe(403)
+    })
+
+    it('retorna 500 quando o repositório falha no soft delete', async () => {
+      await repository.create(makeArea({ id: 'area-1', tenantId: 'tenant-1' }))
+      repository.shouldFailOnSave = true
+      const res = await request(app.getHttpServer()).delete('/areas/area-1')
+      expect(res.status).toBe(500)
     })
   })
 })

@@ -167,6 +167,7 @@ export function ClienteFormDialog({
         </DialogHeader>
 
         <form
+          noValidate
           onSubmit={(e) => {
             void handleSubmit(onValid)(e)
           }}
@@ -176,6 +177,7 @@ export function ClienteFormDialog({
             <div className="space-y-1.5">
               <Label htmlFor="cliente-tipo">Tipo de pessoa</Label>
               <Select
+                name="tipoPessoa"
                 value={tipoPessoa}
                 onValueChange={(v) =>
                   setValue('tipoPessoa', v as TipoPessoaCliente, { shouldValidate: true })
@@ -197,6 +199,7 @@ export function ClienteFormDialog({
             <div className="space-y-1.5">
               <Label htmlFor="cliente-indicador">Indicador IE</Label>
               <Select
+                name="indicadorIe"
                 value={indicadorIe}
                 onValueChange={(v) =>
                   setValue('indicadorIe', v as IndicadorIe, { shouldValidate: true })

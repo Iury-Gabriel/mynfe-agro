@@ -209,6 +209,7 @@ export function EmpresaFormDialog({
             <div className="space-y-1.5">
               <Label htmlFor="empresa-tipo">Tipo de pessoa</Label>
               <Select
+                name="tipoPessoa"
                 value={tipoPessoa}
                 onValueChange={(v) =>
                   setValue('tipoPessoa', v as TipoPessoa, { shouldValidate: true })
@@ -230,6 +231,7 @@ export function EmpresaFormDialog({
             <div className="space-y-1.5">
               <Label htmlFor="empresa-ambiente">Ambiente fiscal</Label>
               <Select
+                name="ambienteFiscal"
                 value={ambienteFiscal}
                 onValueChange={(v) =>
                   setValue('ambienteFiscal', v as AmbienteFiscal, { shouldValidate: true })

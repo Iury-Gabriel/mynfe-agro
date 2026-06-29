@@ -98,9 +98,8 @@ export function CustosProducaoPage(): ReactElement {
     })
   }
 
-  function handleDelete() {
-    if (!selected) return
-    deleteCusto.mutate(selected.id, {
+  function handleDelete(target: CustoProducao) {
+    deleteCusto.mutate(target.id, {
       onSuccess: () => {
         setDeleteOpen(false)
         setSelected(null)
@@ -216,11 +215,11 @@ export function CustosProducaoPage(): ReactElement {
         <CustoProducaoDeleteDialog
           custo={selected}
           open={deleteOpen}
-          onOpenChange={(open) => {
-            setDeleteOpen(open)
-            if (!open) setSelected(null)
+          onOpenChange={() => {
+            setDeleteOpen(false)
+            setSelected(null)
           }}
-          onConfirm={handleDelete}
+          onConfirm={() => handleDelete(selected)}
           isPending={deleteCusto.isPending}
         />
       )}

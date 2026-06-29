@@ -94,9 +94,8 @@ export function AtividadesCampoPage(): ReactElement {
     })
   }
 
-  function handleDelete() {
-    if (!selected) return
-    deleteAtividade.mutate(selected.id, {
+  function handleDelete(target: AtividadeCampo) {
+    deleteAtividade.mutate(target.id, {
       onSuccess: () => {
         setDeleteOpen(false)
         setSelected(null)
@@ -211,11 +210,11 @@ export function AtividadesCampoPage(): ReactElement {
         <AtividadeCampoDeleteDialog
           atividade={selected}
           open={deleteOpen}
-          onOpenChange={(open) => {
-            setDeleteOpen(open)
-            if (!open) setSelected(null)
+          onOpenChange={() => {
+            setDeleteOpen(false)
+            setSelected(null)
           }}
-          onConfirm={handleDelete}
+          onConfirm={() => handleDelete(selected)}
           isPending={deleteAtividade.isPending}
         />
       )}

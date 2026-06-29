@@ -104,6 +104,17 @@ describe('EmpresaStatusDialog', () => {
     })
   })
 
+  it('exibe "Salvando..." enquanto a mutação está pendente', async () => {
+    vi.mocked(api.patch).mockReturnValue(new Promise(() => undefined))
+    const user = userEvent.setup({ delay: null })
+
+    renderWithProviders(<EmpresaStatusDialog empresa={baseEmpresa} open onOpenChange={vi.fn()} />)
+
+    await user.click(screen.getByRole('button', { name: 'Inativar' }))
+
+    expect(await screen.findByRole('button', { name: 'Salvando...' })).toBeDisabled()
+  })
+
   it('fecha ao cancelar', async () => {
     const onOpenChange = vi.fn()
     const user = userEvent.setup({ delay: null })

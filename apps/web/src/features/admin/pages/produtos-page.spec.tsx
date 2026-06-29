@@ -192,7 +192,7 @@ describe('ProdutosPage', () => {
         expect.objectContaining({ descricao: 'Soja premium' }),
       )
     })
-    const body = vi.mocked(api.patch).mock.calls[0][1] as Record<string, unknown>
+    const body = vi.mocked(api.patch).mock.calls[0]![1] as Record<string, unknown>
     expect(body).not.toHaveProperty('empresaId')
     expect(toastSuccess).toHaveBeenCalledWith('Produto atualizado com sucesso.')
   })
@@ -340,5 +340,15 @@ describe('ProdutosPage', () => {
 
     await user.click(screen.getByRole('button', { name: 'Anterior' }))
     expect(await screen.findByText('Primeiro')).toBeInTheDocument()
+  })
+
+  it('usa defaults de paginação quando a resposta omite os metadados', async () => {
+    vi.mocked(api.get).mockResolvedValue({ data: { produtos: [makeProduto()] } })
+    renderWithProviders(<ProdutosPage />)
+
+    await screen.findByText('Soja em grão')
+    expect(screen.getByText(/Página 1 de 1 · 0 produtos/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Anterior' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Próxima' })).toBeDisabled()
   })
 })

@@ -80,7 +80,7 @@ describe(CreateClienteUseCase.name, () => {
       makeInput({
         enderecosEntrega: [
           { enderecoLogradouro: 'Rua Entrega 1', municipio: 'Sorriso', uf: 'MT', principal: true },
-          { enderecoLogradouro: 'Rua Entrega 2' },
+          {},
         ],
       }),
     )

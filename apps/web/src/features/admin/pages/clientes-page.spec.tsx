@@ -296,4 +296,51 @@ describe('ClientesPage', () => {
     await user.click(screen.getByRole('button', { name: 'Anterior' }))
     expect(await screen.findByText('Primeiro')).toBeInTheDocument()
   })
+
+  it('usa defaults de paginação quando a resposta omite os metadados', async () => {
+    vi.mocked(api.get).mockResolvedValue({ data: { clientes: [makeCliente()] } })
+    renderWithProviders(<ClientesPage />)
+
+    await screen.findByText('Agro Comércio LTDA')
+    expect(screen.getByText(/Página 1 de 1 · 0 clientes/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Anterior' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Próxima' })).toBeDisabled()
+  })
+
+  it('filtra pelo e-mail ignorando clientes sem e-mail', async () => {
+    mockList([
+      makeCliente({ id: 'c1', razaoSocialNome: 'Alpha', email: 'alpha@mail.com' }),
+      makeCliente({ id: 'c2', razaoSocialNome: 'Beta', email: null }),
+    ])
+    const user = userEvent.setup({ delay: null })
+    renderWithProviders(<ClientesPage />)
+
+    await screen.findByText('Alpha')
+    await user.type(screen.getByLabelText('Buscar clientes'), 'alpha@mail')
+
+    expect(screen.getByText('Alpha')).toBeInTheDocument()
+    expect(screen.queryByText('Beta')).not.toBeInTheDocument()
+  })
+
+  it('exibe o tipo bruto quando não há rótulo mapeado', async () => {
+    mockList([makeCliente({ tipoPessoa: 'XX' as never })])
+    renderWithProviders(<ClientesPage />)
+
+    expect(await screen.findByText('XX')).toBeInTheDocument()
+  })
+
+  it('cancela a exclusão e limpa a seleção', async () => {
+    mockList([makeCliente()])
+    const user = userEvent.setup({ delay: null })
+    renderWithProviders(<ClientesPage />)
+
+    await screen.findByText('Agro Comércio LTDA')
+    await user.click(screen.getByRole('button', { name: /Excluir/ }))
+    expect(screen.getByRole('heading', { name: 'Excluir cliente' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Cancelar' }))
+    await waitFor(() => {
+      expect(screen.queryByRole('heading', { name: 'Excluir cliente' })).not.toBeInTheDocument()
+    })
+  })
 })

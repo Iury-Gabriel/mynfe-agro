@@ -94,6 +94,19 @@ describe('NotasFiscaisPage', () => {
     expect(screen.getByText('Autorizada')).toBeInTheDocument()
   })
 
+  it('usa traço quando a nota não tem número nem série', async () => {
+    mockList([makeNota({ id: 'nf2', numero: null, serie: null, status: 'pendente' })])
+    renderWithProviders(<NotasFiscaisPage />)
+
+    await screen.findByText('Pendente')
+    expect(
+      screen.getByText(
+        (_content, element) =>
+          element?.tagName === 'SPAN' && element.textContent === '— / —',
+      ),
+    ).toBeInTheDocument()
+  })
+
   it('exibe erro com retry', async () => {
     vi.mocked(api.get).mockRejectedValue(new Error('boom'))
     renderWithProviders(<NotasFiscaisPage />)
@@ -135,6 +148,104 @@ describe('NotasFiscaisPage', () => {
       )
     })
     expect(toastSuccess).toHaveBeenCalledWith('Nota cancelada.')
+  })
+
+  it('filtra por status recarregando a primeira página', async () => {
+    mockList([makeNota()])
+    const user = userEvent.setup({ delay: null })
+    renderWithProviders(<NotasFiscaisPage />)
+
+    await screen.findByText('1042 / 1')
+    await user.click(screen.getByRole('combobox', { name: 'Filtrar por status' }))
+    await user.click(await screen.findByRole('option', { name: 'Autorizada' }))
+
+    await waitFor(() => {
+      expect(
+        vi.mocked(api.get).mock.calls.some(
+          ([, config]) =>
+            (config as { params?: { status?: string } })?.params?.status === 'autorizada',
+        ),
+      ).toBe(true)
+    })
+  })
+
+  it('refaz a busca ao clicar em tentar novamente', async () => {
+    vi.mocked(api.get).mockRejectedValue(new Error('boom'))
+    const user = userEvent.setup({ delay: null })
+    renderWithProviders(<NotasFiscaisPage />)
+
+    await user.click(await screen.findByRole('button', { name: 'Tentar novamente' }))
+    await waitFor(() => {
+      expect(vi.mocked(api.get).mock.calls.length).toBeGreaterThan(1)
+    })
+  })
+
+  it('navega entre páginas', async () => {
+    vi.mocked(api.get).mockImplementation((_url: string, config?: unknown) => {
+      const page = (config as { params?: { page?: number } } | undefined)?.params?.page ?? 1
+      return Promise.resolve({
+        data: { notas: [makeNota()], total: 40, page, perPage: 20, totalPages: 2 },
+      })
+    })
+    const user = userEvent.setup({ delay: null })
+    renderWithProviders(<NotasFiscaisPage />)
+
+    await screen.findByText('1042 / 1')
+    await user.click(screen.getByRole('button', { name: 'Próxima' }))
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Anterior' })).toBeEnabled()
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Anterior' }))
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Anterior' })).toBeDisabled()
+    })
+  })
+
+  it('fecha o detalhe ao trocar o estado do diálogo', async () => {
+    mockList([makeNota()])
+    vi.mocked(api.get).mockResolvedValueOnce({
+      data: { notas: [makeNota()], total: 1, page: 1, perPage: 20, totalPages: 1 },
+    })
+    vi.mocked(api.get).mockResolvedValueOnce({ data: { nota: makeNota() } })
+    const user = userEvent.setup({ delay: null })
+    renderWithProviders(<NotasFiscaisPage />)
+
+    await user.click(await screen.findByRole('button', { name: 'Detalhe' }))
+    expect(await screen.findByText('NF-e 1042 / Série 1')).toBeInTheDocument()
+
+    await user.keyboard('{Escape}')
+    await waitFor(() => {
+      expect(screen.queryByText('NF-e 1042 / Série 1')).not.toBeInTheDocument()
+    })
+  })
+
+  it('exibe erro de cancelamento via toast', async () => {
+    mockList([makeNota()])
+    vi.mocked(api.post).mockRejectedValue(new Error('boom'))
+    const user = userEvent.setup({ delay: null })
+    renderWithProviders(<NotasFiscaisPage />)
+
+    await user.click(await screen.findByRole('button', { name: 'Cancelar' }))
+    await user.click(screen.getByRole('button', { name: 'Cancelar nota' }))
+
+    await waitFor(() => {
+      expect(toastError).toHaveBeenCalledWith('Não foi possível cancelar a nota.')
+    })
+  })
+
+  it('fecha o diálogo de cancelamento ao voltar', async () => {
+    mockList([makeNota()])
+    const user = userEvent.setup({ delay: null })
+    renderWithProviders(<NotasFiscaisPage />)
+
+    await user.click(await screen.findByRole('button', { name: 'Cancelar' }))
+    await user.click(await screen.findByRole('button', { name: 'Voltar' }))
+
+    await waitFor(() => {
+      expect(screen.queryByRole('heading', { name: 'Cancelar nota fiscal' })).not.toBeInTheDocument()
+    })
   })
 
   it('oculta cancelar para quem não tem permissão', async () => {

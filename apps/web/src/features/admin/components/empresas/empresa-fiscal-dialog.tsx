@@ -168,6 +168,7 @@ export function EmpresaFiscalDialog({
               <div className="space-y-1.5">
                 <Label htmlFor="fiscal-ambiente">Ambiente fiscal</Label>
                 <Select
+                  name="ambienteFiscal"
                   value={ambienteFiscal}
                   onValueChange={(v) =>
                     setValue('ambienteFiscal', v as AmbienteFiscal, { shouldValidate: true })

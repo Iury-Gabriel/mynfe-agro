@@ -137,6 +137,29 @@ describe('ConfiguracoesPage', () => {
     expect(screen.queryByRole('button', { name: 'Salvar configurações' })).not.toBeInTheDocument()
   })
 
+  it('normaliza nomenclatura inválida para Talhão e deixa o dia em branco quando nulo', async () => {
+    vi.mocked(api.get).mockResolvedValue({
+      data: { tenant: makeConfig({ labelArea: 'Inexistente', diaCorteConsolidacao: null }) },
+    })
+    renderWithProviders(<ConfiguracoesPage />)
+
+    await screen.findByDisplayValue('Fazenda X')
+    expect(screen.getByLabelText('Dia de corte da consolidação')).toHaveValue(null)
+    expect(screen.getByLabelText('Nomenclatura de área')).toHaveTextContent('Talhão')
+  })
+
+  it('exibe "Salvando…" enquanto persiste as configurações', async () => {
+    vi.mocked(api.get).mockResolvedValue({ data: { tenant: makeConfig() } })
+    vi.mocked(api.patch).mockReturnValue(new Promise(() => undefined))
+    const user = userEvent.setup({ delay: null })
+    renderWithProviders(<ConfiguracoesPage />)
+
+    await screen.findByDisplayValue('Fazenda X')
+    await user.click(screen.getByRole('button', { name: 'Salvar configurações' }))
+
+    expect(await screen.findByRole('button', { name: 'Salvando…' })).toBeInTheDocument()
+  })
+
   it('exibe erro de validação quando o nome é vazio', async () => {
     vi.mocked(api.get).mockResolvedValue({ data: { tenant: makeConfig() } })
     const user = userEvent.setup({ delay: null })

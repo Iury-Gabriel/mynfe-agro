@@ -57,21 +57,19 @@ export function FilaFaturamentoPage(): ReactElement {
     setReviewPedido(pedido)
   }
 
-  function closeReview(open: boolean): void {
-    if (open) return
+  function closeReview(): void {
     setReviewPedido(null)
     setEmittedNota(null)
   }
 
-  function handleConfirmEmissao(): void {
-    if (!empresaId || !reviewPedido) return
+  function handleConfirmEmissao(reviewEmpresaId: string, target: FilaPedido): void {
     emitir.mutate(
-      { empresaId, pedidoId: reviewPedido.id },
+      { empresaId: reviewEmpresaId, pedidoId: target.id },
       {
         onSuccess: (nota) => {
           setEmittedNota(nota)
           toast.success(
-            `DANFE do pedido ${reviewPedido.numero}: ${FISCAL_STATUS_LABEL[nota.status]}.`,
+            `DANFE do pedido ${target.numero}: ${FISCAL_STATUS_LABEL[nota.status]}.`,
           )
         },
         onError: () => toast.error('Não foi possível emitir a DANFE.'),
@@ -158,7 +156,7 @@ export function FilaFaturamentoPage(): ReactElement {
           empresaId={empresaId}
           nota={emittedNota}
           isEmitting={emitir.isPending}
-          onConfirm={handleConfirmEmissao}
+          onConfirm={() => handleConfirmEmissao(empresaId, reviewPedido)}
         />
       )}
     </div>

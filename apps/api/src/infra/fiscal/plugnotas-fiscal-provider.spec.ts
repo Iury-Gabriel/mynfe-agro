@@ -104,6 +104,15 @@ describe(PlugNotasFiscalProvider.name, () => {
       expect(result.protocolo).toBeTruthy()
     })
 
+    it('emite com serie nula usando string vazia no seed', async () => {
+      const sut = new PlugNotasFiscalProvider(makeEnv())
+
+      const result = await sut.emitir(makeInput({ serie: null }))
+
+      expect(result.status).toBe('autorizada')
+      expect(result.chaveAcesso).toHaveLength(44)
+    })
+
     it('permanece em simulação quando PLUGNOTAS_ENABLED=true mas sem API key', async () => {
       const sut = new PlugNotasFiscalProvider(makeEnv({ PLUGNOTAS_ENABLED: true }))
 
@@ -208,6 +217,47 @@ describe(PlugNotasFiscalProvider.name, () => {
       const result = await sut.cancelar('pn-1')
       expect(result.status).toBe('rejeitada')
       expect(result.mensagemRetorno).toBe('fora do prazo')
+    })
+
+    it('usa string vazia no header quando a API key some após a checagem', async () => {
+      stubFetch({ status: 'autorizada' })
+      let apiKeyReads = 0
+      const env = {
+        get<T extends keyof Env>(key: T): Env[T] {
+          if (key === 'PLUGNOTAS_ENABLED') return true as Env[T]
+          if (key === 'PLUGNOTAS_API_KEY') {
+            apiKeyReads += 1
+            return (apiKeyReads === 1 ? 'secret-key' : undefined) as Env[T]
+          }
+          if (key === 'PLUGNOTAS_BASE_URL') return 'https://api.sandbox.plugnotas.com.br' as Env[T]
+          if (key === 'PLUGNOTAS_TIMEOUT_MS') return 30000 as Env[T]
+          return undefined as Env[T]
+        },
+      } as EnvService
+      const sut = new PlugNotasFiscalProvider(env)
+
+      const result = await sut.emitir(makeInput())
+
+      expect(result.status).toBe('autorizada')
+    })
+
+    it('aborta a requisição quando o timeout expira', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(
+          async () =>
+            new Promise((resolve) => {
+              setTimeout(() => resolve({ status: 200, json: async () => ({ status: 'autorizada' }) }), 50)
+            }),
+        ),
+      )
+      const sut = new PlugNotasFiscalProvider(
+        makeEnv({ PLUGNOTAS_ENABLED: true, PLUGNOTAS_API_KEY: 'secret-key', PLUGNOTAS_TIMEOUT_MS: 0 }),
+      )
+
+      const result = await sut.emitir(makeInput())
+
+      expect(result.status).toBe('autorizada')
     })
 
     it('consultar mapeia todos os status conhecidos', async () => {

@@ -35,6 +35,23 @@ describe('resolvePreco', () => {
     expect(sut).toBe(90)
   })
 
+  it('mantém o mais recente quando ele aparece primeiro no array', () => {
+    const recente = makeTabelaPrecoCliente({
+      id: 'recente',
+      preco: 90,
+      vigenciaInicio: new Date('2024-05-01'),
+    })
+    const antigo = makeTabelaPrecoCliente({
+      id: 'antigo',
+      preco: 70,
+      vigenciaInicio: new Date('2024-01-01'),
+    })
+
+    const sut = resolvePreco({ precosCliente: [recente, antigo], precoPadrao: 100, ref })
+
+    expect(sut).toBe(90)
+  })
+
   it('trata vigenciaInicio nula como menos específica que uma datada', () => {
     const semInicio = makeTabelaPrecoCliente({ id: 'sem-inicio', preco: 60 })
     const comInicio = makeTabelaPrecoCliente({

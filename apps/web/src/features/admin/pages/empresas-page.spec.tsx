@@ -209,4 +209,56 @@ describe('EmpresasPage', () => {
     await user.click(screen.getByRole('button', { name: 'Anterior' }))
     expect(await screen.findByText('Primeira')).toBeInTheDocument()
   })
+
+  it('usa defaults de paginação quando a resposta omite os metadados', async () => {
+    vi.mocked(api.get).mockResolvedValue({ data: { empresas: [makeEmpresa()] } })
+    renderWithProviders(<EmpresasPage />)
+
+    await screen.findByText('Verde Folha LTDA')
+    expect(screen.getByText(/Página 1 de 1 · 0 empresas/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Anterior' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Próxima' })).toBeDisabled()
+  })
+
+  it('filtra pelo nome fantasia ignorando empresas sem fantasia', async () => {
+    mockList([
+      makeEmpresa({ id: 'e1', razaoSocial: 'Alpha Agro', nomeFantasia: 'Folha Verde' }),
+      makeEmpresa({ id: 'e2', razaoSocial: 'Beta Agro', nomeFantasia: null }),
+    ])
+    const user = userEvent.setup({ delay: null })
+    renderWithProviders(<EmpresasPage />)
+
+    await screen.findByText('Alpha Agro')
+    await user.type(screen.getByLabelText('Buscar empresas'), 'folha verde')
+
+    expect(screen.getByText('Alpha Agro')).toBeInTheDocument()
+    expect(screen.queryByText('Beta Agro')).not.toBeInTheDocument()
+  })
+
+  it('exibe o ambiente cru quando não há rótulo mapeado', async () => {
+    mockList([makeEmpresa({ ambienteFiscal: 'desconhecido' as never })])
+    renderWithProviders(<EmpresasPage />)
+
+    expect(await screen.findByText('desconhecido')).toBeInTheDocument()
+  })
+
+  it('abre o dialog fiscal e o fecha limpando a seleção', async () => {
+    mockList([makeEmpresa()])
+    const user = userEvent.setup({ delay: null })
+    renderWithProviders(<EmpresasPage />)
+
+    await screen.findByText('Verde Folha LTDA')
+    await user.click(screen.getByRole('button', { name: /Fiscal/ }))
+
+    expect(
+      screen.getByRole('heading', { name: /Configuração fiscal/ }),
+    ).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Cancelar' }))
+    await waitFor(() => {
+      expect(
+        screen.queryByRole('heading', { name: /Configuração fiscal/ }),
+      ).not.toBeInTheDocument()
+    })
+  })
 })

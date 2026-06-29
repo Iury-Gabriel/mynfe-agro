@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -141,6 +141,30 @@ describe('FazendaFormDialog', () => {
 
     expect(screen.getByLabelText('Área total (ha)')).toHaveValue('')
     expect(screen.getByLabelText('UF')).toHaveValue('')
+  })
+
+  it('exibe erro quando a UF excede dois caracteres', async () => {
+    const onSubmit = vi.fn()
+    const user = userEvent.setup({ delay: null })
+    renderWithProviders(
+      <FazendaFormDialog
+        open
+        onOpenChange={vi.fn()}
+        fazenda={null}
+        onSubmit={onSubmit}
+        isPending={false}
+      />,
+    )
+
+    await user.type(screen.getByLabelText('Empresa'), 'e1')
+    await user.type(screen.getByLabelText('Nome'), 'Fazenda Nova')
+    fireEvent.change(screen.getByLabelText('UF'), { target: { value: 'XYZ' } })
+    await user.click(screen.getByRole('button', { name: 'Criar fazenda' }))
+
+    expect(
+      await screen.findByText('String must contain at most 2 character(s)'),
+    ).toBeInTheDocument()
+    expect(onSubmit).not.toHaveBeenCalled()
   })
 
   it('fecha o diálogo ao clicar em Cancelar', async () => {

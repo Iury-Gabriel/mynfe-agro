@@ -97,9 +97,8 @@ export function AreasPage(): ReactElement {
     }
   }
 
-  function handleDelete() {
-    if (!selected) return
-    deleteArea.mutate(selected.id, {
+  function handleDelete(target: Area) {
+    deleteArea.mutate(target.id, {
       onSuccess: () => {
         setDeleteOpen(false)
         setSelected(null)
@@ -223,11 +222,11 @@ export function AreasPage(): ReactElement {
         <AreaDeleteDialog
           area={selected}
           open={deleteOpen}
-          onOpenChange={(open) => {
-            setDeleteOpen(open)
-            if (!open) setSelected(null)
+          onOpenChange={() => {
+            setDeleteOpen(false)
+            setSelected(null)
           }}
-          onConfirm={handleDelete}
+          onConfirm={() => handleDelete(selected)}
           isPending={deleteArea.isPending}
         />
       )}

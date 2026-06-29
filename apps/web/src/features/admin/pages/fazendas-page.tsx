@@ -104,9 +104,8 @@ export function FazendasPage(): ReactElement {
     }
   }
 
-  function handleDelete() {
-    if (!selected) return
-    deleteFazenda.mutate(selected.id, {
+  function handleDelete(target: Fazenda) {
+    deleteFazenda.mutate(target.id, {
       onSuccess: () => {
         setDeleteOpen(false)
         setSelected(null)
@@ -231,11 +230,11 @@ export function FazendasPage(): ReactElement {
         <FazendaDeleteDialog
           fazenda={selected}
           open={deleteOpen}
-          onOpenChange={(open) => {
-            setDeleteOpen(open)
-            if (!open) setSelected(null)
+          onOpenChange={() => {
+            setDeleteOpen(false)
+            setSelected(null)
           }}
-          onConfirm={handleDelete}
+          onConfirm={() => handleDelete(selected)}
           isPending={deleteFazenda.isPending}
         />
       )}

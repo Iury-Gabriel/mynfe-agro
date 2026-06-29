@@ -3,7 +3,7 @@ import { Test } from '@nestjs/testing'
 import { makeAtividadeCampo } from '@test/factories/make-atividade-campo'
 import { InMemoryAtividadeCampoRepository } from '@test/repositories/in-memory-atividade-campo-repository'
 import request from 'supertest'
-import { describe, beforeEach, afterAll, it, expect } from 'vitest'
+import { describe, beforeEach, afterAll, it, expect, vi } from 'vitest'
 
 import { AtividadesCampoController } from './atividades-campo.controller'
 
@@ -94,6 +94,12 @@ describe(AtividadesCampoController.name, () => {
       const res = await request(app.getHttpServer()).get('/atividades-campo')
       expect(res.status).toBe(403)
     })
+
+    it('retorna 500 quando o repositório falha na listagem', async () => {
+      vi.spyOn(repository, 'count').mockRejectedValueOnce(new Error('db down'))
+      const res = await request(app.getHttpServer()).get('/atividades-campo')
+      expect(res.status).toBe(500)
+    })
   })
 
   describe('POST /atividades-campo', () => {
@@ -163,6 +169,13 @@ describe(AtividadesCampoController.name, () => {
       currentUser = { ...mockUser, permissions: ['atividade:read'] }
       const res = await request(app.getHttpServer()).delete('/atividades-campo/atividade-1')
       expect(res.status).toBe(403)
+    })
+
+    it('retorna 500 quando o repositório falha no soft delete', async () => {
+      await repository.create(makeAtividadeCampo({ id: 'atividade-1', tenantId: 'tenant-1' }))
+      repository.shouldFailOnSave = true
+      const res = await request(app.getHttpServer()).delete('/atividades-campo/atividade-1')
+      expect(res.status).toBe(500)
     })
   })
 })

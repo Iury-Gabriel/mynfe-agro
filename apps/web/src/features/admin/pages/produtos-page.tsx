@@ -122,11 +122,10 @@ export function ProdutosPage(): ReactElement {
     }
   }
 
-  function handleStatusConfirm() {
-    if (!selected) return
-    const nextStatus = selected.status === 'ativo' ? 'inativo' : 'ativo'
+  function handleStatusConfirm(target: Produto) {
+    const nextStatus = target.status === 'ativo' ? 'inativo' : 'ativo'
     setStatus.mutate(
-      { id: selected.id, status: nextStatus },
+      { id: target.id, status: nextStatus },
       {
         onSuccess: () => {
           setStatusOpen(false)
@@ -259,11 +258,11 @@ export function ProdutosPage(): ReactElement {
         <ProdutoStatusDialog
           produto={selected}
           open={statusOpen}
-          onOpenChange={(open) => {
-            setStatusOpen(open)
-            if (!open) setSelected(null)
+          onOpenChange={() => {
+            setStatusOpen(false)
+            setSelected(null)
           }}
-          onConfirm={handleStatusConfirm}
+          onConfirm={() => handleStatusConfirm(selected)}
           isPending={setStatus.isPending}
         />
       )}
@@ -273,9 +272,9 @@ export function ProdutosPage(): ReactElement {
           produto={selected}
           canEdit={canUpdate}
           open={fichaOpen}
-          onOpenChange={(open) => {
-            setFichaOpen(open)
-            if (!open) setSelected(null)
+          onOpenChange={() => {
+            setFichaOpen(false)
+            setSelected(null)
           }}
         />
       )}

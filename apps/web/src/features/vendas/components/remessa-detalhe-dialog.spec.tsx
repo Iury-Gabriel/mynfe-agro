@@ -63,4 +63,72 @@ describe('RemessaDetalheDialog', () => {
     await waitFor(() => expect(screen.getByText('Lote: LOTE-ABC')).toBeInTheDocument())
     expect(screen.getByText('PED-009')).toBeInTheDocument()
   })
+
+  it('renderiza observações e item sem lote rastreado e ainda não consolidada', async () => {
+    const remessa = makeRemessa({
+      status: 'aberta',
+      pedidoConsolidadoId: null,
+      observacoes: 'Entregar cedo',
+      itens: [
+        {
+          id: 'it1',
+          produtoId: 'Trigo',
+          loteId: null,
+          quantidade: 3,
+          precoUnitario: 10,
+          valorTotal: 30,
+        },
+      ],
+      lotes: [],
+    })
+    vi.mocked(api.get).mockResolvedValue({ data: { remessa } })
+
+    renderWithProviders(
+      <RemessaDetalheDialog open onOpenChange={vi.fn()} empresaId="e1" remessa={remessa} />,
+    )
+
+    expect(screen.getByText('Entregar cedo')).toBeInTheDocument()
+    expect(screen.getByText('Trigo')).toBeInTheDocument()
+    await waitFor(() => expect(screen.getByText('Lote: —')).toBeInTheDocument())
+    expect(
+      screen.getByText('Ainda não consolidada em um pedido mensal.'),
+    ).toBeInTheDocument()
+  })
+
+  it('mostra estado vazio quando a remessa não tem itens', async () => {
+    const remessa = makeRemessa({ itens: [], lotes: [] })
+    vi.mocked(api.get).mockResolvedValue({ data: { remessa } })
+
+    renderWithProviders(
+      <RemessaDetalheDialog open onOpenChange={vi.fn()} empresaId="e1" remessa={remessa} />,
+    )
+
+    await waitFor(() =>
+      expect(screen.getByText('Nenhum item nesta remessa.')).toBeInTheDocument(),
+    )
+  })
+
+  it('não busca dados quando fechado', () => {
+    const remessa = makeRemessa()
+    vi.mocked(api.get).mockResolvedValue({ data: { remessa } })
+
+    renderWithProviders(
+      <RemessaDetalheDialog open={false} onOpenChange={vi.fn()} empresaId="e1" remessa={remessa} />,
+    )
+
+    expect(api.get).not.toHaveBeenCalled()
+  })
+
+  it('exibe erro ao carregar os detalhes da remessa', async () => {
+    const remessa = makeRemessa()
+    vi.mocked(api.get).mockRejectedValue(new Error('boom'))
+
+    renderWithProviders(
+      <RemessaDetalheDialog open onOpenChange={vi.fn()} empresaId="e1" remessa={remessa} />,
+    )
+
+    await waitFor(() =>
+      expect(screen.getByText('Erro ao carregar os detalhes da remessa.')).toBeInTheDocument(),
+    )
+  })
 })

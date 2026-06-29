@@ -179,7 +179,7 @@ describe('FazendasPage', () => {
         expect.objectContaining({ nome: 'Fazenda Editada' }),
       )
     })
-    const body = vi.mocked(api.patch).mock.calls[0][1] as Record<string, unknown>
+    const body = vi.mocked(api.patch).mock.calls[0]![1] as Record<string, unknown>
     expect(body).not.toHaveProperty('empresaId')
     expect(toastSuccess).toHaveBeenCalledWith('Fazenda atualizada com sucesso.')
   })
@@ -260,6 +260,53 @@ describe('FazendasPage', () => {
 
     expect(screen.queryByText('Alpha')).not.toBeInTheDocument()
     expect(screen.getByText('Beta')).toBeInTheDocument()
+  })
+
+  it('usa defaults de paginação quando a resposta omite os metadados', async () => {
+    vi.mocked(api.get).mockResolvedValue({ data: { fazendas: [makeFazenda()] } })
+    renderWithProviders(<FazendasPage />)
+
+    await screen.findByText('Fazenda Boa Vista')
+    expect(screen.getByText(/Página 1 de 1 · 0 fazendas/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Anterior' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Próxima' })).toBeDisabled()
+  })
+
+  it('filtra por município e CAR ignorando registros sem esses campos', async () => {
+    mockList([
+      makeFazenda({ id: 'f1', nome: 'Alpha', municipio: 'Lucas', car: 'CAR-1' }),
+      makeFazenda({ id: 'f2', nome: 'Beta', municipio: null, car: null }),
+    ])
+    const user = userEvent.setup({ delay: null })
+    renderWithProviders(<FazendasPage />)
+
+    await screen.findByText('Alpha')
+    await user.type(screen.getByLabelText('Buscar fazendas'), 'lucas')
+
+    expect(screen.getByText('Alpha')).toBeInTheDocument()
+    expect(screen.queryByText('Beta')).not.toBeInTheDocument()
+  })
+
+  it('renderiza município sem UF quando só a UF é nula e mostra UF sem município', async () => {
+    mockList([makeFazenda({ id: 'f1', municipio: null, uf: 'MT' })])
+    renderWithProviders(<FazendasPage />)
+
+    expect(await screen.findByText('— / MT')).toBeInTheDocument()
+  })
+
+  it('limpa a seleção ao fechar o diálogo de exclusão', async () => {
+    mockList([makeFazenda()])
+    const user = userEvent.setup({ delay: null })
+    renderWithProviders(<FazendasPage />)
+
+    await screen.findByText('Fazenda Boa Vista')
+    await user.click(screen.getByRole('button', { name: /Excluir/ }))
+    expect(screen.getByRole('heading', { name: 'Excluir fazenda' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Cancelar' }))
+    await waitFor(() => {
+      expect(screen.queryByRole('heading', { name: 'Excluir fazenda' })).not.toBeInTheDocument()
+    })
   })
 
   it('navega entre páginas com Anterior/Próxima', async () => {

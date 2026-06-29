@@ -160,6 +160,7 @@ export function AreaFormDialog({
             <div className="space-y-1.5">
               <Label htmlFor="area-unidade">Unidade</Label>
               <Select
+                name="unidadeTamanho"
                 value={unidadeTamanho}
                 onValueChange={(v) =>
                   setValue('unidadeTamanho', v as UnidadeTamanho, { shouldValidate: true })

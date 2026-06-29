@@ -99,9 +99,8 @@ export function TabelaPrecosPage(): ReactElement {
     })
   }
 
-  function handleDeleteConfirm() {
-    if (!selected) return
-    deletePreco.mutate(selected.id, {
+  function handleDeleteConfirm(target: TabelaPreco) {
+    deletePreco.mutate(target.id, {
       onSuccess: () => {
         setDeleteOpen(false)
         setSelected(null)
@@ -211,11 +210,11 @@ export function TabelaPrecosPage(): ReactElement {
         <PrecoDeleteDialog
           preco={selected}
           open={deleteOpen}
-          onOpenChange={(open) => {
-            setDeleteOpen(open)
-            if (!open) setSelected(null)
+          onOpenChange={() => {
+            setDeleteOpen(false)
+            setSelected(null)
           }}
-          onConfirm={handleDeleteConfirm}
+          onConfirm={() => handleDeleteConfirm(selected)}
           isPending={deletePreco.isPending}
         />
       )}

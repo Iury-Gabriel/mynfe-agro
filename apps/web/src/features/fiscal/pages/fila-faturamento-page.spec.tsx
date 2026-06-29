@@ -166,6 +166,72 @@ describe('FilaFaturamentoPage', () => {
     expect(await screen.findByText('CHV')).toBeInTheDocument()
   })
 
+  it('fecha a revisão ao cancelar', async () => {
+    mockApiGet([makePedido()])
+    const user = userEvent.setup({ delay: null })
+    renderWithProviders(<FilaFaturamentoPage />)
+
+    await user.click(await screen.findByRole('button', { name: /Revisar DANFE/ }))
+    expect(await screen.findByText(/Revisão da DANFE/)).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Cancelar' }))
+
+    await waitFor(() => {
+      expect(screen.queryByText(/Revisão da DANFE/)).not.toBeInTheDocument()
+    })
+  })
+
+  it('exibe erro de emissão via toast', async () => {
+    mockApiGet([makePedido()])
+    vi.mocked(api.post).mockRejectedValue(new Error('boom'))
+    const user = userEvent.setup({ delay: null })
+    renderWithProviders(<FilaFaturamentoPage />)
+
+    await user.click(await screen.findByRole('button', { name: /Revisar DANFE/ }))
+    await user.click(await screen.findByRole('button', { name: /Emitir DANFE/ }))
+
+    await waitFor(() => {
+      expect(toastError).toHaveBeenCalledWith('Não foi possível emitir a DANFE.')
+    })
+  })
+
+  it('refaz a busca ao clicar em tentar novamente', async () => {
+    vi.mocked(api.get).mockRejectedValue(new Error('boom'))
+    const user = userEvent.setup({ delay: null })
+    renderWithProviders(<FilaFaturamentoPage />)
+
+    await user.click(await screen.findByRole('button', { name: 'Tentar novamente' }))
+    await waitFor(() => {
+      expect(vi.mocked(api.get).mock.calls.length).toBeGreaterThan(1)
+    })
+  })
+
+  it('navega entre páginas', async () => {
+    vi.mocked(api.get).mockImplementation((url: string, config?: unknown) => {
+      if (url === '/api/fila-faturamento') {
+        const page = (config as { params?: { page?: number } } | undefined)?.params?.page ?? 1
+        return Promise.resolve({
+          data: { pedidos: [makePedido()], total: 40, page, perPage: 20, totalPages: 2 },
+        })
+      }
+      return Promise.resolve({ data: { empresas: [], clientes: [], produtos: [] } })
+    })
+    const user = userEvent.setup({ delay: null })
+    renderWithProviders(<FilaFaturamentoPage />)
+
+    await screen.findByText('PED-0042')
+    await user.click(screen.getByRole('button', { name: 'Próxima' }))
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Anterior' })).toBeEnabled()
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Anterior' }))
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Anterior' })).toBeDisabled()
+    })
+  })
+
   it('oculta revisar para quem não tem permissão', async () => {
     useAuthMock.mockReturnValue({ user: { permissions: ['nota:read'] } })
     mockApiGet([makePedido()])

@@ -25,8 +25,9 @@ export function EmpresaSwitcher(): ReactElement | null {
   useEffect(() => {
     if (empresas.length === 0) return
     const stillExists = empresas.some((e) => e.id === activeEmpresaId)
-    if (!activeEmpresaId || !stillExists) {
-      setActiveEmpresaId(empresas[0].id)
+    const first = empresas[0]
+    if (first && (!activeEmpresaId || !stillExists)) {
+      setActiveEmpresaId(first.id)
     }
   }, [empresas, activeEmpresaId, setActiveEmpresaId])
 

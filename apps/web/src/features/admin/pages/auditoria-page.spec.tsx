@@ -86,7 +86,7 @@ describe('AuditoriaPage', () => {
 
     await waitFor(() => {
       const calls = vi.mocked(api.get).mock.calls
-      const lastConfig = calls[calls.length - 1][1] as { params?: { entidade?: string } }
+      const lastConfig = calls[calls.length - 1]![1] as { params?: { entidade?: string } }
       expect(lastConfig.params?.entidade).toBe('produto')
     })
   })
@@ -113,5 +113,31 @@ describe('AuditoriaPage', () => {
 
     await user.click(screen.getByRole('button', { name: 'Anterior' }))
     expect(await screen.findByText('primeira')).toBeInTheDocument()
+  })
+
+  it('filtra por ação e envia o parâmetro acao', async () => {
+    mockList([makeLog()])
+    const user = userEvent.setup({ delay: null })
+    renderWithProviders(<AuditoriaPage />)
+
+    await screen.findByText('tenant')
+    await user.click(screen.getByRole('combobox', { name: 'Filtrar por ação' }))
+    await user.click(await screen.findByRole('option', { name: 'Excluir' }))
+
+    await waitFor(() => {
+      const calls = vi.mocked(api.get).mock.calls
+      const lastConfig = calls[calls.length - 1]![1] as { params?: { acao?: string } }
+      expect(lastConfig.params?.acao).toBe('excluir')
+    })
+  })
+
+  it('usa defaults de paginação quando a resposta omite os metadados', async () => {
+    vi.mocked(api.get).mockResolvedValue({ data: { logs: [makeLog()] } })
+    renderWithProviders(<AuditoriaPage />)
+
+    await screen.findByText('tenant')
+    expect(screen.getByText(/Página 1 de 1 · 0 registros/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Anterior' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Próxima' })).toBeDisabled()
   })
 })

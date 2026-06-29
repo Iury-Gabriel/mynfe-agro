@@ -122,9 +122,8 @@ export function ClientesPage(): ReactElement {
     }
   }
 
-  function handleDelete() {
-    if (!selected) return
-    deleteCliente.mutate(selected.id, {
+  function handleDelete(target: Cliente) {
+    deleteCliente.mutate(target.id, {
       onSuccess: () => {
         setDeleteOpen(false)
         setSelected(null)
@@ -245,11 +244,11 @@ export function ClientesPage(): ReactElement {
         <ClienteDeleteDialog
           cliente={selected}
           open={deleteOpen}
-          onOpenChange={(open) => {
-            setDeleteOpen(open)
-            if (!open) setSelected(null)
+          onOpenChange={() => {
+            setDeleteOpen(false)
+            setSelected(null)
           }}
-          onConfirm={handleDelete}
+          onConfirm={() => handleDelete(selected)}
           isPending={deleteCliente.isPending}
         />
       )}

@@ -57,6 +57,28 @@ async function createProduto(
   return id
 }
 
+async function createLote(
+  prisma: PrismaClient,
+  base: { tenantId: string; empresaId: string; produtoId: string },
+): Promise<string> {
+  const id = randomUUID()
+  await prisma.lote.create({
+    data: {
+      id,
+      tenantId: base.tenantId,
+      empresaId: base.empresaId,
+      produtoId: base.produtoId,
+      codigoLote: `LOTE-${id.slice(0, 8)}`,
+      quantidadeInicial: 1000,
+      quantidadeAtual: 1000,
+      dataEntrada: new Date(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
+  })
+  return id
+}
+
 async function createSaldo(
   prisma: PrismaClient,
   base: { tenantId: string; empresaId: string; produtoId: string },
@@ -86,6 +108,7 @@ describe(PrismaEstoqueSaldoRepository.name, () => {
     prisma = globalThis.__E2E_PRISMA__!
     sut = new PrismaEstoqueSaldoRepository(prisma as unknown as PrismaService)
     await prisma.estoqueSaldo.deleteMany()
+    await prisma.lote.deleteMany()
     await prisma.produto.deleteMany()
     await prisma.empresa.deleteMany()
     await prisma.tenant.deleteMany()
@@ -110,11 +133,12 @@ describe(PrismaEstoqueSaldoRepository.name, () => {
 
   it('findByChave distingue saldo com lote de saldo sem lote', async () => {
     const base = await seed()
+    const loteId = await createLote(prisma, base)
     await createSaldo(prisma, base, null, 100)
-    await createSaldo(prisma, base, 'lote-x', 200)
+    await createSaldo(prisma, base, loteId, 200)
 
     const semLote = await sut.findByChave(base.tenantId, base.empresaId, base.produtoId, null)
-    const comLote = await sut.findByChave(base.tenantId, base.empresaId, base.produtoId, 'lote-x')
+    const comLote = await sut.findByChave(base.tenantId, base.empresaId, base.produtoId, loteId)
     expect(semLote!.quantidadeDisponivel).toBe(100)
     expect(comLote!.quantidadeDisponivel).toBe(200)
   })
@@ -122,8 +146,9 @@ describe(PrismaEstoqueSaldoRepository.name, () => {
   it('findManyByEmpresa + count isolam por empresa/tenant', async () => {
     const a = await seed()
     const b = await seed()
+    const loteA = await createLote(prisma, a)
     await createSaldo(prisma, a, null, 1)
-    await createSaldo(prisma, a, 'lote-1', 2)
+    await createSaldo(prisma, a, loteA, 2)
     await createSaldo(prisma, b, null, 3)
 
     const items = await sut.findManyByEmpresa(a.tenantId, a.empresaId, { page: 1, perPage: 10 })

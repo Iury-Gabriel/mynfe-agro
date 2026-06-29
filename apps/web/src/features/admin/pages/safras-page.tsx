@@ -121,9 +121,8 @@ export function SafrasPage(): ReactElement {
     }
   }
 
-  function handleDelete() {
-    if (!selected) return
-    deleteSafra.mutate(selected.id, {
+  function handleDelete(target: Safra) {
+    deleteSafra.mutate(target.id, {
       onSuccess: () => {
         setDeleteOpen(false)
         setSelected(null)
@@ -245,11 +244,11 @@ export function SafrasPage(): ReactElement {
         <SafraDeleteDialog
           safra={selected}
           open={deleteOpen}
-          onOpenChange={(open) => {
-            setDeleteOpen(open)
-            if (!open) setSelected(null)
+          onOpenChange={() => {
+            setDeleteOpen(false)
+            setSelected(null)
           }}
-          onConfirm={handleDelete}
+          onConfirm={() => handleDelete(selected)}
           isPending={deleteSafra.isPending}
         />
       )}

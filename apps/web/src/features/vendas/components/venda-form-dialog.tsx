@@ -220,9 +220,6 @@ export function VendaFormDialog({
                 </div>
               </div>
             ))}
-            {errors.itens?.message && (
-              <p className="text-xs text-destructive">{errors.itens.message}</p>
-            )}
           </div>
 
           <div className="space-y-1.5">

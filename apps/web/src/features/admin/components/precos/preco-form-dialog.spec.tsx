@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -52,6 +52,32 @@ describe('PrecoFormDialog', () => {
         expect.anything(),
       )
     })
+  })
+
+  it('exibe erro quando as vigências excedem dez caracteres', async () => {
+    const onSubmit = vi.fn()
+    const user = userEvent.setup({ delay: null })
+    renderWithProviders(
+      <PrecoFormDialog open onOpenChange={vi.fn()} onSubmit={onSubmit} isPending={false} />,
+    )
+
+    await user.type(screen.getByLabelText('Cliente'), 'c1')
+    await user.type(screen.getByLabelText('Produto'), 'p1')
+    await user.type(screen.getByLabelText('Preço'), '50')
+    fireEvent.change(screen.getByLabelText('Vigência início'), {
+      target: { value: '202602-01-01' },
+    })
+    fireEvent.change(screen.getByLabelText('Vigência fim'), {
+      target: { value: '202612-12-31' },
+    })
+    await user.click(screen.getByRole('button', { name: 'Criar preço' }))
+
+    await waitFor(() => {
+      expect(
+        screen.getAllByText('String must contain at most 10 character(s)').length,
+      ).toBe(2)
+    })
+    expect(onSubmit).not.toHaveBeenCalled()
   })
 
   it('fecha ao clicar em Cancelar', async () => {

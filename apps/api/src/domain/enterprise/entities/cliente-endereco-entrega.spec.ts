@@ -97,6 +97,22 @@ describe(ClienteEnderecoEntrega.name, () => {
       expect(sut.principal).toBe(true)
     })
 
+    it('atualiza apenas uf sem tocar municipio', () => {
+      const sut = ClienteEnderecoEntrega.create({
+        tenantId: 'tenant-1',
+        clienteId: 'cliente-1',
+        municipio: 'Cuiabá',
+        uf: 'MT',
+        createdAt: new Date('2024-01-01'),
+        updatedAt: new Date('2024-01-01'),
+      })
+
+      sut.update({ uf: 'GO' })
+
+      expect(sut.uf).toBe('GO')
+      expect(sut.municipio).toBe('Cuiabá')
+    })
+
     it('mantém campos não informados intactos e atualiza updatedAt', () => {
       const before = new Date('2024-01-01')
       const sut = ClienteEnderecoEntrega.create({
