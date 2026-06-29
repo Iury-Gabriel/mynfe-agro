@@ -9,9 +9,15 @@ import { UserRepository } from '@/domain/application/repositories/user-repositor
 export class InMemoryUserRepository extends UserRepository {
   users: User[] = []
   auditEvents: AuditEventInput[] = []
+  tenantOf = new Map<string, string>()
   shouldFailOnDeleteById = false
   shouldFailOnSave = false
   assignmentRepo: InMemoryUserRoleAssignmentRepository | null = null
+
+  register(user: User, tenantId: string): void {
+    this.users.push(user)
+    this.tenantOf.set(user.id.toString(), tenantId)
+  }
 
   async findById(id: string): Promise<User | null> {
     return this.users.find((u) => u.id.toString() === id) ?? null
@@ -21,11 +27,14 @@ export class InMemoryUserRepository extends UserRepository {
     return this.users.find((u) => u.email === email) ?? null
   }
 
-  async findMany(params: CursorPaginationParams): Promise<{ users: User[]; nextCursor: string | null }> {
+  async findMany(
+    tenantId: string,
+    params: CursorPaginationParams,
+  ): Promise<{ users: User[]; nextCursor: string | null }> {
     const limit = normalizeCursorLimit(params.limit)
-    const ordered = [...this.users].sort((a, b) =>
-      b.id.toString().localeCompare(a.id.toString()),
-    )
+    const ordered = [...this.users]
+      .filter((u) => this.tenantOf.get(u.id.toString()) === tenantId)
+      .sort((a, b) => b.id.toString().localeCompare(a.id.toString()))
     const filtered = params.cursor
       ? ordered.filter((u) => u.id.toString() < params.cursor!)
       : ordered

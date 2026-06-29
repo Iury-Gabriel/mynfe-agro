@@ -24,7 +24,18 @@ import { SetUserPasswordUseCase } from '@/domain/application/use-cases/users/set
 import { UpdateUserUseCase } from '@/domain/application/use-cases/users/update-user-use-case'
 
 
-const mockActor = { id: 'actor-1', email: 'actor@test.com', name: 'Actor', emailVerified: true, permissions: ['admin:users'] }
+let mockActor: Record<string, unknown> = {}
+
+function resetActor() {
+  mockActor = {
+    id: 'actor-1',
+    email: 'actor@test.com',
+    name: 'Actor',
+    emailVerified: true,
+    tenantId: 'tenant-1',
+    permissions: ['admin:users'],
+  }
+}
 
 class MockAuthGuard implements CanActivate {
   canActivate(ctx: ExecutionContext): boolean {
@@ -53,6 +64,7 @@ describe(UsersController.name, () => {
 
   beforeEach(async () => {
     vi.clearAllMocks()
+    resetActor()
     const module = await Test.createTestingModule({
       controllers: [UsersController],
       providers: [
@@ -97,7 +109,7 @@ describe(UsersController.name, () => {
 
       await request(app.getHttpServer()).get('/admin/users?cursor=abc&limit=10')
 
-      expect(listUsers.execute).toHaveBeenCalledWith({ cursor: 'abc', limit: 10 })
+      expect(listUsers.execute).toHaveBeenCalledWith({ tenantId: 'tenant-1', cursor: 'abc', limit: 10 })
     })
 
     it('usa default limit=20 e cursor undefined quando query vazio', async () => {
@@ -105,7 +117,20 @@ describe(UsersController.name, () => {
 
       await request(app.getHttpServer()).get('/admin/users')
 
-      expect(listUsers.execute).toHaveBeenCalledWith({ cursor: undefined, limit: 20 })
+      expect(listUsers.execute).toHaveBeenCalledWith({
+        tenantId: 'tenant-1',
+        cursor: undefined,
+        limit: 20,
+      })
+    })
+
+    it('retorna 403 quando o usuário não tem tenant', async () => {
+      mockActor.tenantId = null
+
+      const res = await request(app.getHttpServer()).get('/admin/users')
+
+      expect(res.status).toBe(403)
+      expect(listUsers.execute).not.toHaveBeenCalled()
     })
 
     it('retorna 400 quando query inválido (limit=200)', async () => {

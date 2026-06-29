@@ -20,7 +20,18 @@ import { ListRolesUseCase } from '@/domain/application/use-cases/roles/list-role
 import { UpdateRoleUseCase } from '@/domain/application/use-cases/roles/update-role-use-case'
 
 
-const mockActor = { id: 'actor-1', email: 'actor@test.com', name: 'Actor', emailVerified: true, permissions: ['admin:roles'] }
+let mockActor: Record<string, unknown> = {}
+
+function resetActor() {
+  mockActor = {
+    id: 'actor-1',
+    email: 'actor@test.com',
+    name: 'Actor',
+    emailVerified: true,
+    tenantId: 'tenant-1',
+    permissions: ['admin:roles'],
+  }
+}
 
 class MockAuthGuard implements CanActivate {
   canActivate(ctx: ExecutionContext): boolean {
@@ -46,6 +57,7 @@ describe(RolesController.name, () => {
 
   beforeEach(async () => {
     vi.clearAllMocks()
+    resetActor()
     const module = await Test.createTestingModule({
       controllers: [RolesController],
       providers: [
@@ -87,7 +99,7 @@ describe(RolesController.name, () => {
 
       await request(app.getHttpServer()).get('/admin/roles?cursor=xyz&limit=5')
 
-      expect(listRoles.execute).toHaveBeenCalledWith({ cursor: 'xyz', limit: 5 })
+      expect(listRoles.execute).toHaveBeenCalledWith({ tenantId: 'tenant-1', cursor: 'xyz', limit: 5 })
     })
 
     it('usa default limit=20 e cursor undefined quando query vazio', async () => {
@@ -95,7 +107,20 @@ describe(RolesController.name, () => {
 
       await request(app.getHttpServer()).get('/admin/roles')
 
-      expect(listRoles.execute).toHaveBeenCalledWith({ cursor: undefined, limit: 20 })
+      expect(listRoles.execute).toHaveBeenCalledWith({
+        tenantId: 'tenant-1',
+        cursor: undefined,
+        limit: 20,
+      })
+    })
+
+    it('retorna 403 quando o usuário não tem tenant', async () => {
+      mockActor.tenantId = null
+
+      const res = await request(app.getHttpServer()).get('/admin/roles')
+
+      expect(res.status).toBe(403)
+      expect(listRoles.execute).not.toHaveBeenCalled()
     })
 
     it('retorna 400 quando query inválido (limit=0)', async () => {

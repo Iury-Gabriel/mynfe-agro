@@ -6,7 +6,7 @@ import type { Role } from '@/domain/enterprise/entities/role'
 import { right, type Either } from '@/core/either'
 import { RoleRepository } from '@/domain/application/repositories/role-repository'
 
-export type ListRolesInput = CursorPaginationParams
+export type ListRolesInput = CursorPaginationParams & { tenantId: string }
 
 export interface RoleWithCount {
   role: Role
@@ -25,7 +25,10 @@ export class ListRolesUseCase {
   constructor(private readonly roleRepo: RoleRepository) {}
 
   async execute(input: ListRolesInput): Promise<ListRolesResult> {
-    const { roles, nextCursor } = await this.roleRepo.findMany(input)
+    const { roles, nextCursor } = await this.roleRepo.findMany(input.tenantId, {
+      cursor: input.cursor,
+      limit: input.limit,
+    })
     const countByRole = await this.roleRepo.countAssignedUsersMany(
       roles.map((role) => role.id.toString()),
     )

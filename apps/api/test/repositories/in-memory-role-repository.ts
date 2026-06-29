@@ -9,8 +9,14 @@ export class InMemoryRoleRepository extends RoleRepository {
   roles: Role[] = []
   auditEvents: AuditEventInput[] = []
   _assignmentCounts = new Map<string, number>()
+  tenantOf = new Map<string, string>()
   shouldFailOnSave = false
   shouldFailOnDelete = false
+
+  register(role: Role, tenantId: string): void {
+    this.roles.push(role)
+    this.tenantOf.set(role.id.toString(), tenantId)
+  }
 
   async findById(id: string): Promise<Role | null> {
     return this.roles.find((r) => r.id.toString() === id) ?? null
@@ -20,11 +26,14 @@ export class InMemoryRoleRepository extends RoleRepository {
     return this.roles.find((r) => r.name === name) ?? null
   }
 
-  async findMany(params: CursorPaginationParams): Promise<{ roles: Role[]; nextCursor: string | null }> {
+  async findMany(
+    tenantId: string,
+    params: CursorPaginationParams,
+  ): Promise<{ roles: Role[]; nextCursor: string | null }> {
     const limit = normalizeCursorLimit(params.limit)
-    const ordered = [...this.roles].sort((a, b) =>
-      b.id.toString().localeCompare(a.id.toString()),
-    )
+    const ordered = [...this.roles]
+      .filter((r) => this.tenantOf.get(r.id.toString()) === tenantId)
+      .sort((a, b) => b.id.toString().localeCompare(a.id.toString()))
     const filtered = params.cursor
       ? ordered.filter((r) => r.id.toString() < params.cursor!)
       : ordered

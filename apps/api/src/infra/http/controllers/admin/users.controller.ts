@@ -70,11 +70,22 @@ export class UsersController {
     private readonly setUserPassword: SetUserPasswordUseCase,
   ) {}
 
+  private requireTenant(user: SessionUser): string {
+    if (!user.tenantId) throw CustomHttpException.forbidden()
+    return user.tenantId
+  }
+
   @Get()
   async list(
     @Query(new ZodValidationPipe(listUsersQuerySchema)) query: z.infer<typeof listUsersQuerySchema>,
+    @CurrentUser() user: SessionUser,
   ) {
-    const result = await this.listUsers.execute({ cursor: query.cursor, limit: query.limit })
+    const tenantId = this.requireTenant(user)
+    const result = await this.listUsers.execute({
+      tenantId,
+      cursor: query.cursor,
+      limit: query.limit,
+    })
     if (result.isLeft()) throw CustomHttpException.fromUseCaseError(result.value)
     const { users, nextCursor } = result.value
     return {
