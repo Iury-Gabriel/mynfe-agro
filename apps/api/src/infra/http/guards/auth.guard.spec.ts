@@ -110,6 +110,59 @@ describe('AuthGuard', () => {
     expect(req.user).toMatchObject({ tenantId: null, empresaIds: [] })
   })
 
+  it('popula isSuperAdmin a partir do customSession', async () => {
+    const reflector = { getAllAndOverride: vi.fn().mockReturnValue(false) } as unknown as Reflector
+    const user = { id: 'u1', email: 'a@b.com', isSuperAdmin: true }
+    const auth = {
+      getSession: vi.fn().mockResolvedValue({ user, permissions: [] }),
+    } as unknown as AuthService
+    const sut = new AuthGuard(reflector, auth)
+    const req: Record<string, unknown> = { headers: {} }
+
+    await sut.canActivate(makeContext(req))
+
+    expect((req.user as Record<string, unknown>).isSuperAdmin).toBe(true)
+  })
+
+  it('define isSuperAdmin false quando ausente na sessão', async () => {
+    const reflector = { getAllAndOverride: vi.fn().mockReturnValue(false) } as unknown as Reflector
+    const auth = {
+      getSession: vi.fn().mockResolvedValue({ user: { id: 'u1', email: 'a@b.com' } }),
+    } as unknown as AuthService
+    const sut = new AuthGuard(reflector, auth)
+    const req: Record<string, unknown> = { headers: {} }
+
+    await sut.canActivate(makeContext(req))
+
+    expect((req.user as Record<string, unknown>).isSuperAdmin).toBe(false)
+  })
+
+  it('bloqueia com 403 quando o tenant do usuário está suspenso', async () => {
+    const reflector = { getAllAndOverride: vi.fn().mockReturnValue(false) } as unknown as Reflector
+    const user = { id: 'u1', email: 'a@b.com', tenantStatus: 'suspenso' }
+    const auth = {
+      getSession: vi.fn().mockResolvedValue({ user, permissions: [] }),
+    } as unknown as AuthService
+    const sut = new AuthGuard(reflector, auth)
+
+    await expect(sut.canActivate(makeContext({ headers: {} }))).rejects.toBeInstanceOf(
+      CustomHttpException,
+    )
+  })
+
+  it('não bloqueia super-admin mesmo com tenant suspenso', async () => {
+    const reflector = { getAllAndOverride: vi.fn().mockReturnValue(false) } as unknown as Reflector
+    const user = { id: 'u1', email: 'a@b.com', isSuperAdmin: true, tenantStatus: 'suspenso' }
+    const auth = {
+      getSession: vi.fn().mockResolvedValue({ user, permissions: [] }),
+    } as unknown as AuthService
+    const sut = new AuthGuard(reflector, auth)
+    const req: Record<string, unknown> = { headers: {} }
+
+    await expect(sut.canActivate(makeContext(req))).resolves.toBe(true)
+    expect((req.user as Record<string, unknown>).isSuperAdmin).toBe(true)
+  })
+
   it('junta header em array antes de montar a sessão', async () => {
     const reflector = { getAllAndOverride: vi.fn().mockReturnValue(false) } as unknown as Reflector
     const getSession = vi.fn().mockResolvedValue({ user: { id: 'u1' } })

@@ -37,6 +37,23 @@ export function useSignIn() {
   })
 }
 
+export function useSignOut() {
+  const navigate = useNavigate()
+  const qc = useQueryClient()
+
+  return useMutation({
+    meta: { suppressGlobalError: true },
+    mutationFn: async () => {
+      const { data } = await api.post('/api/auth/sign-out')
+      return data
+    },
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ['auth', 'session'] })
+      void navigate('/sign-in')
+    },
+  })
+}
+
 export function useForgotPassword() {
   return useMutation({
     meta: { suppressGlobalError: true },

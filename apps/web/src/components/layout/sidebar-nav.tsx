@@ -1,6 +1,6 @@
 import {
   Boxes, Building2, ClipboardList, Coins, FileClock, Layers, LayoutDashboard, Leaf, Map,
-  Package, Receipt, ScrollText, Settings, Shield, ShoppingCart, Sprout, Tag, Tags, Truck,
+  Package, Receipt, ScrollText, Server, Settings, Shield, ShoppingCart, Sprout, Tag, Tags, Truck,
   UserCog, Users, Warehouse, Wheat,
 } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
@@ -52,6 +52,13 @@ const GROUPS: readonly SidebarGroup[] = [
   ]},
 ]
 
+const PLATFORM_ITEM: SidebarItem = {
+  to: '/app/platform/tenants',
+  label: 'Tenants',
+  icon: Server,
+  requiresAny: [],
+}
+
 export function SidebarNav({ onNavigate }: { onNavigate?: () => void }): ReactElement {
   const { user } = useAuth()
   const userPerms = user?.permissions ?? []
@@ -59,6 +66,10 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }): ReactEl
     ...group,
     items: group.items.filter((item) => hasAnyPermission(userPerms, item.requiresAny)),
   })).filter((group) => group.items.length > 0)
+
+  if (user?.isSuperAdmin) {
+    visibleGroups.push({ label: 'Plataforma', items: [PLATFORM_ITEM] })
+  }
 
   return (
     <div className="flex h-full flex-col">

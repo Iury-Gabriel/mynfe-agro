@@ -109,7 +109,9 @@ describe('createAuth', () => {
       },
     ])
     const empresaFindMany = vi.fn().mockResolvedValue([{ empresaId: 'empresa-1' }, { empresaId: 'empresa-2' }])
-    const userFindUnique = vi.fn().mockResolvedValue({ tenantId: 't1' })
+    const userFindUnique = vi
+      .fn()
+      .mockResolvedValue({ tenantId: 't1', isSuperAdmin: false, tenant: { status: 'ativo' } })
     const prisma = {
       userRoleAssignment: { findMany },
       usuarioEmpresa: { findMany: empresaFindMany },
@@ -128,12 +130,15 @@ describe('createAuth', () => {
     const session = { id: 's1' }
 
     await expect(callback({ user, session })).resolves.toEqual({
-      user: { ...user, tenantId: 't1' },
+      user: { ...user, tenantId: 't1', isSuperAdmin: false, tenantStatus: 'ativo' },
       session,
       permissions: ['admin:users', 'admin:roles'],
       empresaIds: ['empresa-1', 'empresa-2'],
     })
-    expect(userFindUnique).toHaveBeenCalledWith({ where: { id: 'u1' }, select: { tenantId: true } })
+    expect(userFindUnique).toHaveBeenCalledWith({
+      where: { id: 'u1' },
+      select: { tenantId: true, isSuperAdmin: true, tenant: { select: { status: true } } },
+    })
     expect(cache.get).toHaveBeenCalledWith('permissions:user:u1')
     expect(cache.set).toHaveBeenCalledWith('permissions:user:u1', ['admin:users', 'admin:roles'], {
       ttlSeconds: 300,
@@ -157,13 +162,19 @@ describe('createAuth', () => {
     const callback = customSessionMock.mock.calls[0][0] as (arg: {
       user: { id: string }
       session: unknown
-    }) => Promise<{ user: { tenantId: string | null }; permissions: string[]; empresaIds: string[] }>
+    }) => Promise<{
+      user: { tenantId: string | null; isSuperAdmin: boolean; tenantStatus: string | null }
+      permissions: string[]
+      empresaIds: string[]
+    }>
 
     const result = await callback({ user: { id: 'u1' }, session: { id: 's1' } })
 
     expect(result.permissions).toEqual(['cached:perm'])
     expect(result.empresaIds).toEqual(['empresa-9'])
     expect(result.user.tenantId).toBeNull()
+    expect(result.user.isSuperAdmin).toBe(false)
+    expect(result.user.tenantStatus).toBeNull()
     expect(findMany).not.toHaveBeenCalled()
     expect(cache.set).not.toHaveBeenCalled()
   })
@@ -177,7 +188,11 @@ describe('createAuth', () => {
         ]),
       },
       usuarioEmpresa: { findMany: vi.fn().mockResolvedValue([]) },
-      user: { findUnique: vi.fn().mockResolvedValue({ tenantId: 't1' }) },
+      user: {
+        findUnique: vi
+          .fn()
+          .mockResolvedValue({ tenantId: 't1', isSuperAdmin: true, tenant: { status: 'ativo' } }),
+      },
     } as unknown as PrismaClient
 
     createAuth(prisma, makeEnv(), makeRedis(), makeCache(), makeMailer())
@@ -185,7 +200,11 @@ describe('createAuth', () => {
     const callback = customSessionMock.mock.calls[0][0] as (arg: {
       user: { id: string }
       session: unknown
-    }) => Promise<{ user: { tenantId: string | null }; permissions: string[]; empresaIds: string[] }>
+    }) => Promise<{
+      user: { tenantId: string | null; isSuperAdmin: boolean; tenantStatus: string | null }
+      permissions: string[]
+      empresaIds: string[]
+    }>
     const user = { id: 'u1' }
     const session = { id: 's1' }
 
@@ -193,6 +212,8 @@ describe('createAuth', () => {
     expect(result.permissions).toEqual(['admin:users', 'admin:roles'])
     expect(result.empresaIds).toEqual([])
     expect(result.user.tenantId).toBe('t1')
+    expect(result.user.isSuperAdmin).toBe(true)
+    expect(result.user.tenantStatus).toBe('ativo')
   })
 
   it('customSession loga e propaga erro ao falhar carregando permissions', async () => {

@@ -25,7 +25,7 @@ export class PrismaRoleRepository extends RoleRepository {
   }
 
   async findByName(name: string): Promise<Role | null> {
-    const raw = await this.prisma.role.findUnique({
+    const raw = await this.prisma.role.findFirst({
       where: { name },
       include: { permissions: true },
     })

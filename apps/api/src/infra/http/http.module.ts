@@ -28,14 +28,18 @@ import { TenantConfigController } from './controllers/admin/tenant-config.contro
 import { UsersController } from './controllers/admin/users.controller'
 import { ClientesController } from './controllers/cliente/clientes.controller'
 import { HealthController } from './controllers/health.controller'
+import { OnboardingController } from './controllers/onboarding.controller'
+import { TenantsController } from './controllers/platform/tenants.controller'
 import { AuthGuard } from './guards/auth.guard'
 import { EmpresaAccessGuard } from './guards/empresa-access.guard'
 import { PermissionGuard } from './guards/permission.guard'
+import { SuperAdminGuard } from './guards/super-admin.guard'
 import { SecurityAuditInterceptor } from './interceptors/security-audit.interceptor'
 import { identityTracker, ipTracker } from './throttler/throttler-trackers'
 
 import { FiscalProvider } from '@/domain/application/ports/fiscal-provider'
 import { SetPasswordPort } from '@/domain/application/ports/set-password-port'
+import { OnboardTenantService } from '@/domain/application/services/onboard-tenant-service'
 import { CreateAreaUseCase } from '@/domain/application/use-cases/areas/create-area-use-case'
 import { DeleteAreaUseCase } from '@/domain/application/use-cases/areas/delete-area-use-case'
 import { ListAreasUseCase } from '@/domain/application/use-cases/areas/list-areas-use-case'
@@ -98,6 +102,10 @@ import { ListSafrasUseCase } from '@/domain/application/use-cases/safras/list-sa
 import { UpdateSafraUseCase } from '@/domain/application/use-cases/safras/update-safra-use-case'
 import { GetTenantConfigUseCase } from '@/domain/application/use-cases/tenant-config/get-tenant-config-use-case'
 import { UpdateTenantConfigUseCase } from '@/domain/application/use-cases/tenant-config/update-tenant-config-use-case'
+import { CreateTenantUseCase } from '@/domain/application/use-cases/tenants/create-tenant-use-case'
+import { ListTenantsUseCase } from '@/domain/application/use-cases/tenants/list-tenants-use-case'
+import { RegisterTenantUseCase } from '@/domain/application/use-cases/tenants/register-tenant-use-case'
+import { SetTenantStatusUseCase } from '@/domain/application/use-cases/tenants/set-tenant-status-use-case'
 import { CreateAdminUserUseCase } from '@/domain/application/use-cases/users/create-admin-user-use-case'
 import { DeactivateUserUseCase } from '@/domain/application/use-cases/users/deactivate-user-use-case'
 import { DeleteUserUseCase } from '@/domain/application/use-cases/users/delete-user-use-case'
@@ -149,6 +157,8 @@ import { PlugNotasFiscalProvider } from '@/infra/fiscal/plugnotas-fiscal-provide
   ],
   controllers: [
     HealthController,
+    OnboardingController,
+    TenantsController,
     RolesController,
     UsersController,
     EmpresasController,
@@ -175,9 +185,10 @@ import { PlugNotasFiscalProvider } from '@/infra/fiscal/plugnotas-fiscal-provide
     AuditoriaController,
   ],
   providers: [
-    // Ordem dos APP_GUARD importa: Throttler → Auth → Permission → EmpresaAccess.
+    // Ordem dos APP_GUARD importa: Throttler → Auth → SuperAdmin → Permission → EmpresaAccess.
     { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_GUARD, useClass: AuthGuard },
+    { provide: APP_GUARD, useClass: SuperAdminGuard },
     { provide: APP_GUARD, useClass: PermissionGuard },
     { provide: APP_GUARD, useClass: EmpresaAccessGuard },
     { provide: APP_INTERCEPTOR, useClass: SecurityAuditInterceptor },
@@ -265,6 +276,11 @@ import { PlugNotasFiscalProvider } from '@/infra/fiscal/plugnotas-fiscal-provide
     UpdateTenantConfigUseCase,
     ListAuditoriaLogsUseCase,
     RegistrarAuditoriaUseCase,
+    OnboardTenantService,
+    RegisterTenantUseCase,
+    CreateTenantUseCase,
+    ListTenantsUseCase,
+    SetTenantStatusUseCase,
   ],
 })
 export class HttpModule {}

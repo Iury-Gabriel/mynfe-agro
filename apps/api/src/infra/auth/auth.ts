@@ -121,11 +121,23 @@ export function createAuth(
             select: { empresaId: true },
           })
           const empresaIds = empresaLinks.map((link) => link.empresaId)
-          const tenantId = (await prisma.user.findUnique({ where: { id: user.id }, select: { tenantId: true } }))?.tenantId ?? null
+          const dbUser = await prisma.user.findUnique({
+            where: { id: user.id },
+            select: { tenantId: true, isSuperAdmin: true, tenant: { select: { status: true } } },
+          })
+          const tenantId = dbUser?.tenantId ?? null
+          const isSuperAdmin = dbUser?.isSuperAdmin ?? false
+          const tenantStatus = dbUser?.tenant?.status ?? null
 
           const cacheKey = permissionsCacheKey(user.id)
           const cached = await cache.get<string[]>(cacheKey)
-          if (cached) return { user: { ...user, tenantId }, session, permissions: cached, empresaIds }
+          if (cached)
+            return {
+              user: { ...user, tenantId, isSuperAdmin, tenantStatus },
+              session,
+              permissions: cached,
+              empresaIds,
+            }
 
           const assignments = await prisma.userRoleAssignment.findMany({
             where: { userId: user.id },
@@ -139,7 +151,12 @@ export function createAuth(
           await cache.set(cacheKey, permissions, {
             ttlSeconds: env.PERMISSIONS_CACHE_TTL_SECONDS,
           })
-          return { user: { ...user, tenantId }, session, permissions, empresaIds }
+          return {
+            user: { ...user, tenantId, isSuperAdmin, tenantStatus },
+            session,
+            permissions,
+            empresaIds,
+          }
         } catch (err) {
           console.error('[customSession] falha ao carregar permissions:', err)
           throw err
