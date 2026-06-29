@@ -121,10 +121,11 @@ export function createAuth(
             select: { empresaId: true },
           })
           const empresaIds = empresaLinks.map((link) => link.empresaId)
+          const tenantId = (await prisma.user.findUnique({ where: { id: user.id }, select: { tenantId: true } }))?.tenantId ?? null
 
           const cacheKey = permissionsCacheKey(user.id)
           const cached = await cache.get<string[]>(cacheKey)
-          if (cached) return { user, session, permissions: cached, empresaIds }
+          if (cached) return { user: { ...user, tenantId }, session, permissions: cached, empresaIds }
 
           const assignments = await prisma.userRoleAssignment.findMany({
             where: { userId: user.id },
@@ -138,7 +139,7 @@ export function createAuth(
           await cache.set(cacheKey, permissions, {
             ttlSeconds: env.PERMISSIONS_CACHE_TTL_SECONDS,
           })
-          return { user, session, permissions, empresaIds }
+          return { user: { ...user, tenantId }, session, permissions, empresaIds }
         } catch (err) {
           console.error('[customSession] falha ao carregar permissions:', err)
           throw err

@@ -3,8 +3,11 @@ import { z } from 'zod'
 
 import type { UseCaseError } from '@/core/errors/use-case-error'
 
+import { ClienteNotFoundError } from '@/domain/application/use-cases/errors/cliente-not-found-error'
 import { EstoqueInsuficienteError } from '@/domain/application/use-cases/errors/estoque-insuficiente-error'
+import { LoteNotFoundError } from '@/domain/application/use-cases/errors/lote-not-found-error'
 import { PedidoNotFoundError } from '@/domain/application/use-cases/errors/pedido-not-found-error'
+import { ProdutoNotFoundError } from '@/domain/application/use-cases/errors/produto-not-found-error'
 import { TransicaoInvalidaError } from '@/domain/application/use-cases/errors/transicao-invalida-error'
 import { CancelarPedidoUseCase } from '@/domain/application/use-cases/vendas/cancelar-pedido-use-case'
 import { ConfirmarPedidoUseCase } from '@/domain/application/use-cases/vendas/confirmar-pedido-use-case'
@@ -19,7 +22,12 @@ import { ZodValidationPipe } from '@/infra/http/pipes/zod-validation.pipe'
 import { PedidoPresenter } from '@/infra/http/presenters/admin/pedido-presenter'
 
 function translateVendaError(err: UseCaseError): CustomHttpException {
-  if (err instanceof PedidoNotFoundError) {
+  if (
+    err instanceof PedidoNotFoundError ||
+    err instanceof ClienteNotFoundError ||
+    err instanceof ProdutoNotFoundError ||
+    err instanceof LoteNotFoundError
+  ) {
     return new CustomHttpException(err.kind, err.message, 404)
   }
   if (err instanceof EstoqueInsuficienteError) {

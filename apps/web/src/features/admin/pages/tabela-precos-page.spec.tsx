@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -27,6 +27,24 @@ const useAuthMock = vi.fn()
 vi.mock('@/providers/auth-context', () => ({
   useAuth: () => useAuthMock() as unknown,
 }))
+
+vi.mock('@/features/admin/api/clientes-api', () => ({
+  useClientes: () => ({
+    data: { clientes: [{ id: 'c1', razaoSocialNome: 'Cliente Alpha' }] },
+  }),
+}))
+
+vi.mock('@/features/admin/api/produtos-api', () => ({
+  useProdutos: () => ({
+    data: { produtos: [{ id: 'p1', descricao: 'Soja' }] },
+  }),
+}))
+
+function selectByName(name: string, value: string): void {
+  fireEvent.change(document.querySelector<HTMLSelectElement>(`select[name="${name}"]`)!, {
+    target: { value },
+  })
+}
 
 const ALL_PERMS = ['preco:read', 'preco:create', 'preco:delete']
 
@@ -132,8 +150,8 @@ describe('TabelaPrecosPage', () => {
 
     expect(screen.getByRole('heading', { name: 'Novo preço' })).toBeInTheDocument()
 
-    await user.type(screen.getByLabelText('Cliente'), 'c1')
-    await user.type(screen.getByLabelText('Produto'), 'p1')
+    selectByName('clienteId', 'c1')
+    selectByName('produtoId', 'p1')
     await user.type(screen.getByLabelText('Preço'), '99')
     await user.click(screen.getByRole('button', { name: 'Criar preço' }))
 
@@ -154,8 +172,8 @@ describe('TabelaPrecosPage', () => {
 
     await screen.findByText('Nenhum registro encontrado.')
     await user.click(screen.getByRole('button', { name: /Novo preço/ }))
-    await user.type(screen.getByLabelText('Cliente'), 'c1')
-    await user.type(screen.getByLabelText('Produto'), 'p1')
+    selectByName('clienteId', 'c1')
+    selectByName('produtoId', 'p1')
     await user.type(screen.getByLabelText('Preço'), '99')
     await user.click(screen.getByRole('button', { name: 'Criar preço' }))
 

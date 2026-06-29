@@ -24,6 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { useAreas } from '@/features/admin/api/areas-api'
 import { SAFRA_STATUSES } from '@/features/admin/api/safras-api'
 
 const STATUS_LABELS: Record<(typeof SAFRA_STATUSES)[number], string> = {
@@ -102,11 +103,16 @@ export function SafraFormDialog({
 }: SafraFormDialogProps): ReactElement {
   const isEdit = safra !== null
 
+  const { data: areasData } = useAreas({ perPage: 100 })
+  const areas = areasData?.areas ?? []
+
   const {
     register,
     handleSubmit,
     control,
     reset,
+    setValue,
+    watch,
     formState: { errors },
   } = useForm<SafraFormValues>({
     resolver: zodResolver(safraSchema),
@@ -118,6 +124,8 @@ export function SafraFormDialog({
       reset(safra ? fromSafra(safra) : emptyDefaults())
     }
   }, [open, safra, reset])
+
+  const areaId = watch('areaId')
 
   function onValid(values: SafraFormValues): void {
     onSubmit(toSafraPayload(values))
@@ -140,7 +148,29 @@ export function SafraFormDialog({
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="safra-area">Área</Label>
-              <Input id="safra-area" disabled={isEdit} {...register('areaId')} />
+              <Select
+                name="areaId"
+                value={areaId}
+                disabled={isEdit}
+                onValueChange={(v) => setValue('areaId', v, { shouldValidate: true })}
+              >
+                <SelectTrigger id="safra-area" aria-label="Área">
+                  <SelectValue placeholder="Selecione a área" />
+                </SelectTrigger>
+                <SelectContent>
+                  {areas.length === 0 ? (
+                    <SelectItem value="__empty" disabled>
+                      Nenhuma área cadastrada
+                    </SelectItem>
+                  ) : (
+                    areas.map((a) => (
+                      <SelectItem key={a.id} value={a.id}>
+                        {a.identificacao}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
               {errors.areaId && <p className="text-xs text-destructive">{errors.areaId.message}</p>}
             </div>
 

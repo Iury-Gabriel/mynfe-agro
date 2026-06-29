@@ -1,4 +1,4 @@
-import { act, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useSyncExternalStore } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -69,9 +69,32 @@ function makeRemessa(overrides: Record<string, unknown> = {}) {
   }
 }
 
+function cadastroFor(url: string): unknown {
+  if (url.includes('/clientes')) {
+    return { clientes: [{ id: 'c1', razaoSocialNome: 'Cliente Um' }], total: 1, page: 1, perPage: 20, totalPages: 1 }
+  }
+  if (url.includes('/produtos')) {
+    return { produtos: [{ id: 'p1', descricao: 'Soja' }], total: 1, page: 1, perPage: 20, totalPages: 1 }
+  }
+  if (url.includes('/lotes')) {
+    return { lotes: [{ id: 'l1', codigoLote: 'L-1' }], total: 1, page: 1, perPage: 20, totalPages: 1 }
+  }
+  return null
+}
+
 function mockList(remessas: unknown[]) {
-  vi.mocked(api.get).mockResolvedValue({
-    data: { remessas, total: remessas.length, page: 1, perPage: 20, totalPages: 1 },
+  vi.mocked(api.get).mockImplementation((url: string) => {
+    const cadastro = cadastroFor(url)
+    if (cadastro) return Promise.resolve({ data: cadastro })
+    return Promise.resolve({
+      data: { remessas, total: remessas.length, page: 1, perPage: 20, totalPages: 1 },
+    })
+  })
+}
+
+function selectByName(name: string, value: string): void {
+  fireEvent.change(document.querySelector<HTMLSelectElement>(`select[name="${name}"]`)!, {
+    target: { value },
   })
 }
 
@@ -130,8 +153,8 @@ describe('RemessasPage', () => {
     renderWithProviders(<RemessasPage />)
 
     await user.click(await screen.findByRole('button', { name: /Nova remessa/ }))
-    await user.type(screen.getByLabelText('Cliente'), 'c1')
-    await user.type(screen.getByLabelText('Produto'), 'p1')
+    selectByName('clienteId', 'c1')
+    selectByName('item-0-produto', 'p1')
     await user.type(screen.getByLabelText('Qtd.'), '5')
     await user.click(screen.getByRole('button', { name: 'Criar remessa' }))
 
@@ -265,8 +288,8 @@ describe('RemessasPage', () => {
     renderWithProviders(<RemessasPage />)
 
     await user.click(await screen.findByRole('button', { name: /Nova remessa/ }))
-    await user.type(screen.getByLabelText('Cliente'), 'c1')
-    await user.type(screen.getByLabelText('Produto'), 'p1')
+    selectByName('clienteId', 'c1')
+    selectByName('item-0-produto', 'p1')
     await user.type(screen.getByLabelText('Qtd.'), '5')
     await user.click(screen.getByRole('button', { name: 'Criar remessa' }))
 

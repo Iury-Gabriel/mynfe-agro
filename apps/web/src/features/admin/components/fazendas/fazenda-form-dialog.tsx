@@ -17,6 +17,14 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { useEmpresas } from '@/features/admin/api/empresas-api'
 
 const fazendaSchema = z.object({
   empresaId: z.string().min(1, 'Empresa obrigatória').max(60),
@@ -100,10 +108,15 @@ export function FazendaFormDialog({
 }: FazendaFormDialogProps): ReactElement {
   const isEdit = fazenda !== null
 
+  const { data: empresasData } = useEmpresas({ perPage: 100 })
+  const empresas = empresasData?.empresas ?? []
+
   const {
     register,
     handleSubmit,
     reset,
+    setValue,
+    watch,
     formState: { errors },
   } = useForm<FazendaFormValues>({
     resolver: zodResolver(fazendaSchema),
@@ -115,6 +128,8 @@ export function FazendaFormDialog({
       reset(fazenda ? fromFazenda(fazenda) : emptyDefaults())
     }
   }, [open, fazenda, reset])
+
+  const empresaId = watch('empresaId')
 
   function onValid(values: FazendaFormValues): void {
     onSubmit(toFazendaPayload(values))
@@ -137,7 +152,29 @@ export function FazendaFormDialog({
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="fazenda-empresa">Empresa</Label>
-              <Input id="fazenda-empresa" disabled={isEdit} {...register('empresaId')} />
+              <Select
+                name="empresaId"
+                value={empresaId}
+                disabled={isEdit}
+                onValueChange={(v) => setValue('empresaId', v, { shouldValidate: true })}
+              >
+                <SelectTrigger id="fazenda-empresa" aria-label="Empresa">
+                  <SelectValue placeholder="Selecione a empresa" />
+                </SelectTrigger>
+                <SelectContent>
+                  {empresas.length === 0 ? (
+                    <SelectItem value="__empty" disabled>
+                      Nenhuma empresa cadastrada
+                    </SelectItem>
+                  ) : (
+                    empresas.map((e) => (
+                      <SelectItem key={e.id} value={e.id}>
+                        {e.nomeFantasia ?? e.razaoSocial}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
               {errors.empresaId && (
                 <p className="text-xs text-destructive">{errors.empresaId.message}</p>
               )}

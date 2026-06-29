@@ -24,6 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { useFazendas } from '@/features/admin/api/fazendas-api'
 
 const UNIDADES_TAMANHO = ['ha', 'm2', 'alq'] as const
 type UnidadeTamanho = (typeof UNIDADES_TAMANHO)[number]
@@ -98,6 +99,9 @@ export function AreaFormDialog({
 }: AreaFormDialogProps): ReactElement {
   const isEdit = area !== null
 
+  const { data: fazendasData } = useFazendas({ perPage: 100 })
+  const fazendas = fazendasData?.fazendas ?? []
+
   const {
     register,
     handleSubmit,
@@ -117,6 +121,7 @@ export function AreaFormDialog({
   }, [open, area, reset])
 
   const unidadeTamanho = watch('unidadeTamanho')
+  const fazendaId = watch('fazendaId')
 
   function onValid(values: AreaFormValues): void {
     onSubmit(toAreaPayload(values))
@@ -138,7 +143,29 @@ export function AreaFormDialog({
         >
           <div className="space-y-1.5">
             <Label htmlFor="area-fazenda">Fazenda</Label>
-            <Input id="area-fazenda" disabled={isEdit} {...register('fazendaId')} />
+            <Select
+              name="fazendaId"
+              value={fazendaId}
+              disabled={isEdit}
+              onValueChange={(v) => setValue('fazendaId', v, { shouldValidate: true })}
+            >
+              <SelectTrigger id="area-fazenda" aria-label="Fazenda">
+                <SelectValue placeholder="Selecione a fazenda" />
+              </SelectTrigger>
+              <SelectContent>
+                {fazendas.length === 0 ? (
+                  <SelectItem value="__empty" disabled>
+                    Nenhuma fazenda cadastrada
+                  </SelectItem>
+                ) : (
+                  fazendas.map((f) => (
+                    <SelectItem key={f.id} value={f.id}>
+                      {f.nome}
+                    </SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
             {errors.fazendaId && (
               <p className="text-xs text-destructive">{errors.fazendaId.message}</p>
             )}

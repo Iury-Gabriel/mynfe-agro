@@ -1,6 +1,8 @@
 import { Body, Controller, Delete, Get, Param, Post, Query } from '@nestjs/common'
 import { z } from 'zod'
 
+import { ClienteNotFoundError } from '@/domain/application/use-cases/errors/cliente-not-found-error'
+import { ProdutoNotFoundError } from '@/domain/application/use-cases/errors/produto-not-found-error'
 import { TabelaPrecoNotFoundError } from '@/domain/application/use-cases/errors/tabela-preco-not-found-error'
 import { CreateTabelaPrecoUseCase } from '@/domain/application/use-cases/precos/create-tabela-preco-use-case'
 import { DeleteTabelaPrecoUseCase } from '@/domain/application/use-cases/precos/delete-tabela-preco-use-case'
@@ -78,7 +80,15 @@ export class TabelaPrecosController {
       vigenciaInicio: body.vigenciaInicio,
       vigenciaFim: body.vigenciaFim,
     })
-    if (result.isLeft()) throw CustomHttpException.fromUseCaseError(result.value)
+    if (result.isLeft()) {
+      if (
+        result.value instanceof ClienteNotFoundError ||
+        result.value instanceof ProdutoNotFoundError
+      ) {
+        throw new CustomHttpException(result.value.kind, result.value.message, 404)
+      }
+      throw CustomHttpException.fromUseCaseError(result.value)
+    }
     return { tabelaPreco: TabelaPrecoPresenter.toHTTP(result.value.tabelaPreco) }
   }
 

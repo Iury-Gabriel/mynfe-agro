@@ -43,6 +43,7 @@
     "better-auth": "^1.6.18",
     "bullmq": "^5.34.0",
     "csrf-csrf": "^3.0.6",
+    "express": "5",
     "helmet": "^8.0.0",
     "ioredis": "^5.4.2",
     "nestjs-throttler-storage-redis": "^0.5.1",

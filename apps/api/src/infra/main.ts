@@ -66,7 +66,7 @@ async function bootstrap(): Promise<void> {
     createSignInLockoutMiddleware(lockout),
   )
 
-  expressApp.all('/api/auth/*', toNodeHandler(auth.instance))
+  expressApp.all('/api/auth/*splat', toNodeHandler(auth.instance))
 
   app.use(express.json({ limit: '10mb' }))
   app.use(express.urlencoded({ extended: true, limit: '10mb' }))

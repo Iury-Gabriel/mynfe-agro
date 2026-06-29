@@ -17,6 +17,15 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { useClientes } from '@/features/admin/api/clientes-api'
+import { useProdutos } from '@/features/admin/api/produtos-api'
 
 const precoSchema = z.object({
   clienteId: z.string().min(1, 'Cliente obrigatório').max(100),
@@ -61,10 +70,17 @@ export function PrecoFormDialog({
   onSubmit,
   isPending,
 }: PrecoFormDialogProps): ReactElement {
+  const { data: clientesData } = useClientes({ perPage: 100 })
+  const clientes = clientesData?.clientes ?? []
+  const { data: produtosData } = useProdutos({ perPage: 100 })
+  const produtos = produtosData?.produtos ?? []
+
   const {
     register,
     handleSubmit,
     reset,
+    setValue,
+    watch,
     formState: { errors },
   } = useForm<PrecoFormValues>({
     resolver: zodResolver(precoSchema),
@@ -76,6 +92,9 @@ export function PrecoFormDialog({
       reset(emptyDefaults())
     }
   }, [open, reset])
+
+  const clienteId = watch('clienteId')
+  const produtoId = watch('produtoId')
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -94,7 +113,28 @@ export function PrecoFormDialog({
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="preco-cliente">Cliente</Label>
-              <Input id="preco-cliente" {...register('clienteId')} />
+              <Select
+                name="clienteId"
+                value={clienteId}
+                onValueChange={(v) => setValue('clienteId', v, { shouldValidate: true })}
+              >
+                <SelectTrigger id="preco-cliente" aria-label="Cliente">
+                  <SelectValue placeholder="Selecione o cliente" />
+                </SelectTrigger>
+                <SelectContent>
+                  {clientes.length === 0 ? (
+                    <SelectItem value="__empty" disabled>
+                      Nenhum cliente cadastrado
+                    </SelectItem>
+                  ) : (
+                    clientes.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.razaoSocialNome}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
               {errors.clienteId && (
                 <p className="text-xs text-destructive">{errors.clienteId.message}</p>
               )}
@@ -102,7 +142,28 @@ export function PrecoFormDialog({
 
             <div className="space-y-1.5">
               <Label htmlFor="preco-produto">Produto</Label>
-              <Input id="preco-produto" {...register('produtoId')} />
+              <Select
+                name="produtoId"
+                value={produtoId}
+                onValueChange={(v) => setValue('produtoId', v, { shouldValidate: true })}
+              >
+                <SelectTrigger id="preco-produto" aria-label="Produto">
+                  <SelectValue placeholder="Selecione o produto" />
+                </SelectTrigger>
+                <SelectContent>
+                  {produtos.length === 0 ? (
+                    <SelectItem value="__empty" disabled>
+                      Nenhum produto cadastrado
+                    </SelectItem>
+                  ) : (
+                    produtos.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.descricao}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
               {errors.produtoId && (
                 <p className="text-xs text-destructive">{errors.produtoId.message}</p>
               )}

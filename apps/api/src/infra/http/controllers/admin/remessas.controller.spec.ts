@@ -1,8 +1,11 @@
 import { APP_GUARD } from '@nestjs/core'
 import { Test } from '@nestjs/testing'
+import { makeCliente } from '@test/factories/make-cliente'
 import { makeLote } from '@test/factories/make-lote'
+import { makeProduto } from '@test/factories/make-produto'
 import { makeRemessa } from '@test/factories/make-remessa'
 import { makeRemessaItem } from '@test/factories/make-remessa-item'
+import { InMemoryClienteRepository } from '@test/repositories/in-memory-cliente-repository'
 import { InMemoryColheitaRepository } from '@test/repositories/in-memory-colheita-repository'
 import { InMemoryEstoqueMovimentoRepository } from '@test/repositories/in-memory-estoque-movimento-repository'
 import { InMemoryEstoqueSaldoRepository } from '@test/repositories/in-memory-estoque-saldo-repository'
@@ -18,6 +21,7 @@ import { RemessasController } from './remessas.controller'
 
 import type { CanActivate, ExecutionContext, INestApplication } from '@nestjs/common'
 
+import { ClienteRepository } from '@/domain/application/repositories/cliente-repository'
 import { EstoqueSaldoRepository } from '@/domain/application/repositories/estoque-saldo-repository'
 import { EstoqueWriteRepository } from '@/domain/application/repositories/estoque-write-repository'
 import { LoteRepository } from '@/domain/application/repositories/lote-repository'
@@ -82,6 +86,7 @@ describe(RemessasController.name, () => {
   let tabelas: InMemoryTabelaPrecoClienteRepository
   let saldos: InMemoryEstoqueSaldoRepository
   let lotes: InMemoryLoteRepository
+  let clientes: InMemoryClienteRepository
   let estoqueWrite: InMemoryEstoqueWriteRepository
 
   beforeEach(async () => {
@@ -91,6 +96,9 @@ describe(RemessasController.name, () => {
     tabelas = new InMemoryTabelaPrecoClienteRepository()
     saldos = new InMemoryEstoqueSaldoRepository()
     lotes = new InMemoryLoteRepository()
+    clientes = new InMemoryClienteRepository()
+    clientes.clientes.push(makeCliente({ id: 'cliente-1' }))
+    produtos.produtos.push(makeProduto({ id: 'produto-1' }))
     estoqueWrite = new InMemoryEstoqueWriteRepository(
       new InMemoryColheitaRepository(),
       lotes,
@@ -108,6 +116,7 @@ describe(RemessasController.name, () => {
         { provide: TabelaPrecoClienteRepository, useValue: tabelas },
         { provide: EstoqueSaldoRepository, useValue: saldos },
         { provide: LoteRepository, useValue: lotes },
+        { provide: ClienteRepository, useValue: clientes },
         { provide: EstoqueWriteRepository, useValue: estoqueWrite },
         CriarRemessaUseCase,
         MarcarRemessaEntregueUseCase,
@@ -168,6 +177,39 @@ describe(RemessasController.name, () => {
       currentUser = { ...mockUser, tenantId: null }
       const res = await request(app.getHttpServer()).post('/remessas').send(validBody)
       expect(res.status).toBe(403)
+    })
+
+    it('retorna 404 quando o cliente não existe', async () => {
+      seedSaldo(saldos, 200)
+      const res = await request(app.getHttpServer())
+        .post('/remessas')
+        .send({ ...validBody, clienteId: 'cliente-x' })
+      expect(res.status).toBe(404)
+      expect(res.body.error.kind).toBe('ClienteNotFound')
+    })
+
+    it('retorna 404 quando o produto não existe', async () => {
+      seedSaldo(saldos, 200)
+      const res = await request(app.getHttpServer())
+        .post('/remessas')
+        .send({
+          ...validBody,
+          itens: [{ produtoId: 'produto-x', quantidade: 100, precoUnitario: 10 }],
+        })
+      expect(res.status).toBe(404)
+      expect(res.body.error.kind).toBe('ProdutoNotFound')
+    })
+
+    it('retorna 404 quando o lote não existe', async () => {
+      seedSaldo(saldos, 200, 'lote-x')
+      const res = await request(app.getHttpServer())
+        .post('/remessas')
+        .send({
+          ...validBody,
+          itens: [{ produtoId: 'produto-1', loteId: 'lote-x', quantidade: 100, precoUnitario: 10 }],
+        })
+      expect(res.status).toBe(404)
+      expect(res.body.error.kind).toBe('LoteNotFound')
     })
   })
 

@@ -24,7 +24,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { useAreas } from '@/features/admin/api/areas-api'
 import { ATIVIDADE_CAMPO_TIPOS } from '@/features/admin/api/atividades-campo-api'
+import { useSafras } from '@/features/admin/api/safras-api'
+
+const NONE_VALUE = '__none'
 
 const TIPO_LABELS: Record<(typeof ATIVIDADE_CAMPO_TIPOS)[number], string> = {
   plantio: 'Plantio',
@@ -80,11 +84,18 @@ export function AtividadeCampoFormDialog({
   onSubmit,
   isPending,
 }: AtividadeCampoFormDialogProps): ReactElement {
+  const { data: safrasData } = useSafras({ perPage: 100 })
+  const safras = safrasData?.safras ?? []
+  const { data: areasData } = useAreas({ perPage: 100 })
+  const areas = areasData?.areas ?? []
+
   const {
     register,
     handleSubmit,
     control,
     reset,
+    setValue,
+    watch,
     formState: { errors },
   } = useForm<AtividadeFormValues>({
     resolver: zodResolver(atividadeSchema),
@@ -96,6 +107,9 @@ export function AtividadeCampoFormDialog({
       reset(emptyDefaults())
     }
   }, [open, reset])
+
+  const safraId = watch('safraId')
+  const areaId = watch('areaId')
 
   function onValid(values: AtividadeFormValues): void {
     onSubmit(toAtividadePayload(values))
@@ -148,12 +162,48 @@ export function AtividadeCampoFormDialog({
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="atividade-safra">Safra (opcional)</Label>
-              <Input id="atividade-safra" {...register('safraId')} />
+              <Select
+                name="safraId"
+                value={safraId === '' ? NONE_VALUE : safraId}
+                onValueChange={(v) =>
+                  setValue('safraId', v === NONE_VALUE ? '' : v, { shouldValidate: true })
+                }
+              >
+                <SelectTrigger id="atividade-safra" aria-label="Safra">
+                  <SelectValue placeholder="Nenhuma" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NONE_VALUE}>Nenhuma</SelectItem>
+                  {safras.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.cultura}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-1.5">
               <Label htmlFor="atividade-area">Área (opcional)</Label>
-              <Input id="atividade-area" {...register('areaId')} />
+              <Select
+                name="areaId"
+                value={areaId === '' ? NONE_VALUE : areaId}
+                onValueChange={(v) =>
+                  setValue('areaId', v === NONE_VALUE ? '' : v, { shouldValidate: true })
+                }
+              >
+                <SelectTrigger id="atividade-area" aria-label="Área">
+                  <SelectValue placeholder="Nenhuma" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NONE_VALUE}>Nenhuma</SelectItem>
+                  {areas.map((a) => (
+                    <SelectItem key={a.id} value={a.id}>
+                      {a.identificacao}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 

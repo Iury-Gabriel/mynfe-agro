@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -31,6 +31,18 @@ const useAuthMock = vi.fn<() => { user: { permissions: string[] } }>()
 vi.mock('@/providers/auth-context', () => ({
   useAuth: () => useAuthMock(),
 }))
+
+vi.mock('@/features/admin/api/areas-api', () => ({
+  useAreas: () => ({
+    data: { areas: [{ id: 'a1', identificacao: 'Talhão 1' }] },
+  }),
+}))
+
+function selectArea(value: string): void {
+  fireEvent.change(document.querySelector<HTMLSelectElement>('select[name="areaId"]')!, {
+    target: { value },
+  })
+}
 
 const ALL_PERMS = ['safra:read', 'safra:create', 'safra:update', 'safra:delete']
 
@@ -127,7 +139,7 @@ describe('SafrasPage', () => {
     await screen.findByText('Nenhum registro encontrado.')
     await user.click(screen.getByRole('button', { name: /Nova safra/ }))
 
-    await user.type(screen.getByLabelText('Área'), 'a1')
+    selectArea('a1')
     await user.type(screen.getByLabelText('Cultura'), 'Milho')
     await user.click(screen.getByRole('button', { name: 'Criar safra' }))
 
@@ -148,7 +160,7 @@ describe('SafrasPage', () => {
 
     await screen.findByText('Nenhum registro encontrado.')
     await user.click(screen.getByRole('button', { name: /Nova safra/ }))
-    await user.type(screen.getByLabelText('Área'), 'a1')
+    selectArea('a1')
     await user.type(screen.getByLabelText('Cultura'), 'Milho')
     await user.click(screen.getByRole('button', { name: 'Criar safra' }))
 
