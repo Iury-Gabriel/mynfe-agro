@@ -1,4 +1,5 @@
 import { FakeAuthProvider } from '@test/providers/fake-auth-provider'
+import { FakeTransactionalMailProvider } from '@test/providers/fake-transactional-mail-provider'
 import { InMemoryCacheRepository } from '@test/repositories/in-memory-cache-repository'
 import { InMemoryUserRoleAssignmentRepository } from '@test/repositories/in-memory-user-role-assignment-repository'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -13,13 +14,15 @@ describe(CreateAdminUserUseCase.name, () => {
   let authProvider: FakeAuthProvider
   let assignmentRepo: InMemoryUserRoleAssignmentRepository
   let cache: InMemoryCacheRepository
+  let mail: FakeTransactionalMailProvider
   let sut: CreateAdminUserUseCase
 
   beforeEach(() => {
     authProvider = new FakeAuthProvider()
     assignmentRepo = new InMemoryUserRoleAssignmentRepository()
     cache = new InMemoryCacheRepository()
-    sut = new CreateAdminUserUseCase(authProvider, assignmentRepo, cache)
+    mail = new FakeTransactionalMailProvider()
+    sut = new CreateAdminUserUseCase(authProvider, assignmentRepo, cache, mail)
   })
 
   it('cria usuário com sucesso', async () => {
@@ -35,6 +38,39 @@ describe(CreateAdminUserUseCase.name, () => {
       expect(result.value.user.email).toBe('ada@example.com')
       expect(result.value.user.name).toBe('Ada Lovelace')
     }
+  })
+
+  it('envia o email de boas-vindas no caminho feliz', async () => {
+    const result = await sut.execute({
+      name: 'Ada Lovelace',
+      email: 'ada@example.com',
+      password: 'senha123',
+      actorUserId: 'actor-1',
+    })
+
+    expect(result.isRight()).toBe(true)
+    expect(mail.welcomeCalls).toHaveLength(1)
+    expect(mail.welcomeCalls[0]).toEqual({ to: 'ada@example.com', name: 'Ada Lovelace' })
+  })
+
+  it('cria o usuário mesmo quando o envio do email de boas-vindas falha (best-effort)', async () => {
+    mail.shouldFailOnWelcome = true
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+
+    const result = await sut.execute({
+      name: 'Ada Lovelace',
+      email: 'ada@example.com',
+      password: 'senha123',
+      actorUserId: 'actor-1',
+    })
+
+    expect(result.isRight()).toBe(true)
+    expect(mail.welcomeCalls).toHaveLength(0)
+    expect(errorSpy).toHaveBeenCalledWith(
+      '[CreateAdminUserUseCase] welcome email failed:',
+      expect.any(Error),
+    )
+    errorSpy.mockRestore()
   })
 
   it('atribui roles ao criar usuário', async () => {

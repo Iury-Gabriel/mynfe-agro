@@ -7,11 +7,17 @@ import { AuthContext, type AuthContextValue, type AuthUser } from '@/providers/a
 
 async function fetchSession(): Promise<AuthUser | null> {
   try {
-    const { data } = await api.get<{ user?: AuthUser; permissions?: readonly string[] } | null>(
-      '/api/auth/get-session',
-    )
+    const { data } = await api.get<{
+      user?: AuthUser
+      permissions?: readonly string[]
+      empresaIds?: readonly string[]
+    } | null>('/api/auth/get-session')
     if (!data?.user) return null
-    return { ...data.user, permissions: data.permissions ?? [] }
+    return {
+      ...data.user,
+      permissions: data.permissions ?? [],
+      empresaIds: data.empresaIds ?? [],
+    }
   } catch {
     return null
   }

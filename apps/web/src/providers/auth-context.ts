@@ -7,6 +7,7 @@ export interface AuthUser {
   emailVerified: boolean
   role?: string | null
   permissions?: readonly string[]
+  empresaIds?: readonly string[]
   [extra: string]: unknown
 }
 

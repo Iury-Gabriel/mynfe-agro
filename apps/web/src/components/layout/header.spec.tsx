@@ -11,6 +11,10 @@ vi.mock('@/providers/auth-context', () => ({
   useAuth: () => useAuthMock() as unknown,
 }))
 
+vi.mock('@/features/admin/components/empresas/empresa-switcher', () => ({
+  EmpresaSwitcher: () => <div data-testid="empresa-switcher" />,
+}))
+
 describe('Header', () => {
   it('exibe o nome e email do usuário quando autenticado', () => {
     useAuthMock.mockReturnValue({
@@ -29,5 +33,25 @@ describe('Header', () => {
     renderWithProviders(<Header />)
 
     expect(screen.queryByText('Test User')).not.toBeInTheDocument()
+  })
+
+  it('renderiza o switcher de empresa quando o usuário tem empresa:read', () => {
+    useAuthMock.mockReturnValue({
+      user: { id: 'u1', name: 'Test', email: 't@e.com', permissions: ['empresa:read'] },
+    })
+
+    renderWithProviders(<Header />)
+
+    expect(screen.getByTestId('empresa-switcher')).toBeInTheDocument()
+  })
+
+  it('não renderiza o switcher quando o usuário não tem empresa:read', () => {
+    useAuthMock.mockReturnValue({
+      user: { id: 'u1', name: 'Test', email: 't@e.com', permissions: [] },
+    })
+
+    renderWithProviders(<Header />)
+
+    expect(screen.queryByTestId('empresa-switcher')).not.toBeInTheDocument()
   })
 })

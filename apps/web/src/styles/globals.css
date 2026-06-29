@@ -84,6 +84,45 @@
   }
 }
 
+/*
+ * Tema AgroFlow — identidade visual oficial (dark verde).
+ * Aplica-se a qualquer subárvore com a classe `.agroflow`, então o app shell
+ * pode ativar o tema sem depender do toggle global claro/escuro.
+ */
+@layer base {
+  .agroflow {
+    --background: 158 42% 6%;
+    --foreground: 150 18% 96%;
+
+    --card: 158 30% 9%;
+    --card-foreground: 150 18% 96%;
+
+    --popover: 158 32% 8%;
+    --popover-foreground: 150 18% 96%;
+
+    --primary: 142 70% 45%;
+    --primary-foreground: 158 42% 6%;
+
+    --secondary: 156 22% 14%;
+    --secondary-foreground: 150 18% 96%;
+
+    --muted: 156 20% 13%;
+    --muted-foreground: 150 12% 62%;
+
+    --accent: 150 30% 16%;
+    --accent-foreground: 150 18% 96%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 156 24% 16%;
+    --input: 156 24% 18%;
+    --ring: 142 70% 45%;
+
+    --radius: 1rem;
+  }
+}
+
 @layer base {
   * {
     @apply border-border;
@@ -93,5 +132,15 @@
     font-feature-settings:
       'rlig' 1,
       'calt' 1;
+  }
+}
+
+@layer utilities {
+  /* Brilho radial suave do topo, como no dashboard de referência. */
+  .agroflow-glow {
+    background:
+      radial-gradient(60% 50% at 15% -10%, hsl(142 60% 22% / 0.45) 0%, transparent 60%),
+      radial-gradient(50% 40% at 85% -5%, hsl(160 50% 20% / 0.35) 0%, transparent 55%),
+      hsl(var(--background));
   }
 }
