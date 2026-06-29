@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -34,6 +34,18 @@ vi.mock('@/features/admin/api/fichas-tecnicas-api', () => ({
   useUpdateFichaTecnica: () => ({ mutate: vi.fn(), isPending: false }),
   useDeleteFichaTecnica: () => ({ mutate: vi.fn(), isPending: false }),
 }))
+
+vi.mock('@/features/admin/api/empresas-api', () => ({
+  useEmpresas: () => ({
+    data: { empresas: [{ id: 'e1', razaoSocial: 'Agro LTDA', nomeFantasia: 'Agro' }] },
+  }),
+}))
+
+function selectEmpresa(value: string): void {
+  fireEvent.change(document.querySelector<HTMLSelectElement>('select[name="empresaId"]')!, {
+    target: { value },
+  })
+}
 
 const ALL_PERMS = ['produto:read', 'produto:create', 'produto:update', 'produto:status']
 
@@ -141,7 +153,7 @@ describe('ProdutosPage', () => {
 
     await user.type(screen.getByLabelText('Descrição'), 'Milho')
     await user.type(screen.getByLabelText('Unidade de medida'), 'sc')
-    await user.type(screen.getByLabelText('Empresa'), 'e1')
+    selectEmpresa('e1')
     await user.click(screen.getByRole('button', { name: 'Criar produto' }))
 
     await waitFor(() => {
@@ -163,7 +175,7 @@ describe('ProdutosPage', () => {
     await user.click(screen.getByRole('button', { name: /Novo produto/ }))
     await user.type(screen.getByLabelText('Descrição'), 'Milho')
     await user.type(screen.getByLabelText('Unidade de medida'), 'sc')
-    await user.type(screen.getByLabelText('Empresa'), 'e1')
+    selectEmpresa('e1')
     await user.click(screen.getByRole('button', { name: 'Criar produto' }))
 
     await waitFor(() => {

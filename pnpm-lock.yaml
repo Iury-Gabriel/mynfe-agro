@@ -105,6 +105,9 @@ importers:
       csrf-csrf:
         specifier: ^3.0.6
         version: 3.2.2
+      express:
+        specifier: '5'
+        version: 5.2.1
       helmet:
         specifier: ^8.0.0
         version: 8.1.0

@@ -1,7 +1,9 @@
+import { makeCliente } from '@test/factories/make-cliente'
 import { makeEstoqueSaldo } from '@test/factories/make-estoque-saldo'
 import { makeLote } from '@test/factories/make-lote'
 import { makeProduto } from '@test/factories/make-produto'
 import { makeTabelaPrecoCliente } from '@test/factories/make-tabela-preco-cliente'
+import { InMemoryClienteRepository } from '@test/repositories/in-memory-cliente-repository'
 import { InMemoryColheitaRepository } from '@test/repositories/in-memory-colheita-repository'
 import { InMemoryEstoqueMovimentoRepository } from '@test/repositories/in-memory-estoque-movimento-repository'
 import { InMemoryEstoqueSaldoRepository } from '@test/repositories/in-memory-estoque-saldo-repository'
@@ -15,7 +17,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { CriarRemessaUseCase, type CriarRemessaInput } from './criar-remessa-use-case'
 
 import { UnexpectedError } from '@/core/errors/unexpected-error'
+import { ClienteNotFoundError } from '@/domain/application/use-cases/errors/cliente-not-found-error'
 import { EstoqueInsuficienteError } from '@/domain/application/use-cases/errors/estoque-insuficiente-error'
+import { LoteNotFoundError } from '@/domain/application/use-cases/errors/lote-not-found-error'
+import { ProdutoNotFoundError } from '@/domain/application/use-cases/errors/produto-not-found-error'
 
 function makeInput(override: Partial<CriarRemessaInput> = {}): CriarRemessaInput {
   return {
@@ -37,6 +42,7 @@ describe(CriarRemessaUseCase.name, () => {
   let colheitaRepo: InMemoryColheitaRepository
   let movimentoRepo: InMemoryEstoqueMovimentoRepository
   let writeRepo: InMemoryEstoqueWriteRepository
+  let clienteRepo: InMemoryClienteRepository
   let sut: CriarRemessaUseCase
 
   beforeEach(() => {
@@ -48,6 +54,9 @@ describe(CriarRemessaUseCase.name, () => {
     colheitaRepo = new InMemoryColheitaRepository()
     movimentoRepo = new InMemoryEstoqueMovimentoRepository()
     writeRepo = new InMemoryEstoqueWriteRepository(colheitaRepo, loteRepo, movimentoRepo, saldoRepo)
+    clienteRepo = new InMemoryClienteRepository()
+    clienteRepo.clientes.push(makeCliente({ id: 'cliente-1' }))
+    produtoRepo.produtos.push(makeProduto({ id: 'produto-1' }))
     sut = new CriarRemessaUseCase(
       remessaRepo,
       produtoRepo,
@@ -55,6 +64,7 @@ describe(CriarRemessaUseCase.name, () => {
       saldoRepo,
       loteRepo,
       writeRepo,
+      clienteRepo,
     )
   })
 
@@ -96,7 +106,6 @@ describe(CriarRemessaUseCase.name, () => {
         vigenciaInicio: new Date('2024-01-01'),
       }),
     )
-    produtoRepo.produtos.push(makeProduto({ id: 'produto-1', precoPadrao: 80 }))
 
     const result = await sut.execute(
       makeInput({ itens: [{ produtoId: 'produto-1', loteId: null, quantidade: 0 }] }),
@@ -108,15 +117,31 @@ describe(CriarRemessaUseCase.name, () => {
     }
   })
 
-  it('usa zero quando não há tabela vigente nem produto cadastrado', async () => {
+  it('usa zero quando não há tabela vigente nem preço padrão do produto', async () => {
     const result = await sut.execute(
-      makeInput({ itens: [{ produtoId: 'produto-x', loteId: null, quantidade: 0 }] }),
+      makeInput({ itens: [{ produtoId: 'produto-1', loteId: null, quantidade: 0 }] }),
     )
 
     expect(result.isRight()).toBe(true)
     if (result.isRight()) {
       expect(result.value.remessa.itens[0].precoUnitario).toBe(0)
     }
+  })
+
+  it('retorna ClienteNotFoundError quando o cliente não existe no tenant', async () => {
+    const result = await sut.execute(makeInput({ clienteId: 'cliente-x' }))
+
+    expect(result.isLeft()).toBe(true)
+    expect(result.value).toBeInstanceOf(ClienteNotFoundError)
+  })
+
+  it('retorna ProdutoNotFoundError quando algum produto não existe no tenant', async () => {
+    const result = await sut.execute(
+      makeInput({ itens: [{ produtoId: 'produto-x', loteId: null, quantidade: 0, precoUnitario: 30 }] }),
+    )
+
+    expect(result.isLeft()).toBe(true)
+    expect(result.value).toBeInstanceOf(ProdutoNotFoundError)
   })
 
   it('retorna EstoqueInsuficienteError quando o saldo não cobre a saída', async () => {
@@ -134,7 +159,7 @@ describe(CriarRemessaUseCase.name, () => {
     expect(result.value).toBeInstanceOf(EstoqueInsuficienteError)
   })
 
-  it('retorna EstoqueInsuficienteError quando o lote referenciado não existe', async () => {
+  it('retorna LoteNotFoundError quando o lote referenciado não existe', async () => {
     saldoRepo.saldos.push(
       makeEstoqueSaldo({ produtoId: 'produto-1', loteId: 'lote-x', quantidadeDisponivel: 500 }),
     )
@@ -146,7 +171,7 @@ describe(CriarRemessaUseCase.name, () => {
     )
 
     expect(result.isLeft()).toBe(true)
-    expect(result.value).toBeInstanceOf(EstoqueInsuficienteError)
+    expect(result.value).toBeInstanceOf(LoteNotFoundError)
   })
 
   it('retorna EstoqueInsuficienteError quando o lote não tem quantidade suficiente', async () => {

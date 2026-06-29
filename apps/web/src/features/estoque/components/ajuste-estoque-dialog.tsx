@@ -24,6 +24,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { useProdutos } from '@/features/admin/api/produtos-api'
+import { useLotes } from '@/features/estoque/api/lotes-api'
+
+const NONE = '__none__'
 
 const schema = z.object({
   produtoId: z.string().min(1, 'Produto obrigatório').max(60),
@@ -73,6 +77,9 @@ export function AjusteEstoqueDialog({
     defaultValues: emptyDefaults(),
   })
 
+  const produtos = useProdutos().data?.produtos ?? []
+  const lotes = useLotes({ empresaId }).data?.lotes ?? []
+
   useEffect(() => {
     if (open) reset(emptyDefaults())
   }, [open, reset])
@@ -106,14 +113,63 @@ export function AjusteEstoqueDialog({
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="ajuste-produto">Produto</Label>
-              <Input id="ajuste-produto" {...register('produtoId')} />
+              <Controller
+                control={control}
+                name="produtoId"
+                render={({ field }) => (
+                  <Select
+                    name="produtoId"
+                    value={field.value}
+                    onValueChange={(v) => field.onChange(v)}
+                  >
+                    <SelectTrigger id="ajuste-produto" aria-label="Produto" className="h-11">
+                      <SelectValue placeholder="Selecione um produto" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {produtos.length === 0 ? (
+                        <SelectItem value={NONE} disabled>
+                          Nenhum produto cadastrado
+                        </SelectItem>
+                      ) : (
+                        produtos.map((p) => (
+                          <SelectItem key={p.id} value={p.id}>
+                            {p.descricao}
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
               {errors.produtoId && (
                 <p className="text-xs text-destructive">{errors.produtoId.message}</p>
               )}
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="ajuste-lote">Lote</Label>
-              <Input id="ajuste-lote" placeholder="Opcional" {...register('loteId')} />
+              <Controller
+                control={control}
+                name="loteId"
+                render={({ field }) => (
+                  <Select
+                    name="loteId"
+                    value={field.value || NONE}
+                    onValueChange={(v) => field.onChange(v === NONE ? '' : v)}
+                  >
+                    <SelectTrigger id="ajuste-lote" aria-label="Lote" className="h-11">
+                      <SelectValue placeholder="Sem lote" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={NONE}>Sem lote</SelectItem>
+                      {lotes.map((l) => (
+                        <SelectItem key={l.id} value={l.id}>
+                          {l.codigoLote}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </div>
           </div>
 
@@ -125,7 +181,7 @@ export function AjusteEstoqueDialog({
                 name="direcao"
                 render={({ field }) => (
                   <Select name="direcao" value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger id="ajuste-direcao" aria-label="Tipo">
+                    <SelectTrigger id="ajuste-direcao" aria-label="Tipo" className="h-11">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -138,7 +194,12 @@ export function AjusteEstoqueDialog({
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="ajuste-quantidade">Quantidade</Label>
-              <Input id="ajuste-quantidade" inputMode="decimal" {...register('quantidade')} />
+              <Input
+                id="ajuste-quantidade"
+                className="h-11"
+                inputMode="decimal"
+                {...register('quantidade')}
+              />
               {errors.quantidade && (
                 <p className="text-xs text-destructive">{errors.quantidade.message}</p>
               )}
@@ -147,13 +208,18 @@ export function AjusteEstoqueDialog({
 
           <div className="space-y-1.5">
             <Label htmlFor="ajuste-data">Data</Label>
-            <Input id="ajuste-data" type="date" {...register('data')} />
+            <Input id="ajuste-data" className="h-11" type="date" {...register('data')} />
             {errors.data && <p className="text-xs text-destructive">{errors.data.message}</p>}
           </div>
 
           <div className="space-y-1.5">
             <Label htmlFor="ajuste-motivo">Motivo</Label>
-            <Input id="ajuste-motivo" placeholder="Ex.: inventário cíclico" {...register('motivo')} />
+            <Input
+              id="ajuste-motivo"
+              className="h-11"
+              placeholder="Ex.: inventário cíclico"
+              {...register('motivo')}
+            />
             {errors.motivo && <p className="text-xs text-destructive">{errors.motivo.message}</p>}
           </div>
 

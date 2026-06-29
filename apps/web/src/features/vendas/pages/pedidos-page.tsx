@@ -275,6 +275,7 @@ export function PedidosPage(): ReactElement {
         <VendaFormDialog
           open={formOpen}
           onOpenChange={setFormOpen}
+          empresaId={empresaId}
           title="Novo pedido"
           description="Cliente, itens e preço (resolvido automaticamente se vazio). A empresa ativa é a faturadora."
           submitLabel="Criar pedido"

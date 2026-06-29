@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
@@ -6,8 +6,37 @@ import { RegistrarColheitaDialog } from './registrar-colheita-dialog'
 
 import { renderWithProviders } from '@/test/render-with-providers'
 
+const produtosData = vi.fn<() => { data?: { produtos: { id: string; descricao: string }[] } }>()
+const safrasData = vi.fn<() => { data?: { safras: { id: string; cultura: string }[] } }>()
+const areasData = vi.fn<() => { data?: { areas: { id: string; identificacao: string }[] } }>()
+
+vi.mock('@/features/admin/api/produtos-api', () => ({
+  useProdutos: () => produtosData(),
+}))
+vi.mock('@/features/admin/api/safras-api', () => ({
+  useSafras: () => safrasData(),
+}))
+vi.mock('@/features/admin/api/areas-api', () => ({
+  useAreas: () => areasData(),
+}))
+
+function setLists(): void {
+  produtosData.mockReturnValue({
+    data: { produtos: [{ id: 'p1', descricao: 'Alface' }] },
+  })
+  safrasData.mockReturnValue({ data: { safras: [{ id: 's1', cultura: 'Verão' }] } })
+  areasData.mockReturnValue({ data: { areas: [{ id: 'a1', identificacao: 'Talhão 1' }] } })
+}
+
+function selectByName(name: string, value: string): void {
+  fireEvent.change(document.querySelector<HTMLSelectElement>(`select[name="${name}"]`)!, {
+    target: { value },
+  })
+}
+
 describe('RegistrarColheitaDialog', () => {
   it('renderiza os campos quando aberto', () => {
+    setLists()
     renderWithProviders(
       <RegistrarColheitaDialog
         open
@@ -24,6 +53,7 @@ describe('RegistrarColheitaDialog', () => {
   })
 
   it('não renderiza conteúdo quando fechado', () => {
+    setLists()
     renderWithProviders(
       <RegistrarColheitaDialog
         open={false}
@@ -37,7 +67,25 @@ describe('RegistrarColheitaDialog', () => {
     expect(screen.queryByRole('heading', { name: 'Registrar colheita' })).not.toBeInTheDocument()
   })
 
+  it('mostra opção desabilitada quando não há produtos', () => {
+    produtosData.mockReturnValue({})
+    safrasData.mockReturnValue({})
+    areasData.mockReturnValue({})
+    renderWithProviders(
+      <RegistrarColheitaDialog
+        open
+        onOpenChange={vi.fn()}
+        empresaId="e1"
+        onSubmit={vi.fn()}
+        isPending={false}
+      />,
+    )
+
+    expect(screen.getByText('Nenhum produto cadastrado')).toBeInTheDocument()
+  })
+
   it('exibe mensagens de validação ao submeter vazio', async () => {
+    setLists()
     const onSubmit = vi.fn()
     const user = userEvent.setup({ delay: null })
     renderWithProviders(
@@ -60,6 +108,7 @@ describe('RegistrarColheitaDialog', () => {
   })
 
   it('submete com campos opcionais preenchidos', async () => {
+    setLists()
     const onSubmit = vi.fn()
     const user = userEvent.setup({ delay: null })
     renderWithProviders(
@@ -72,10 +121,10 @@ describe('RegistrarColheitaDialog', () => {
       />,
     )
 
-    await user.type(screen.getByLabelText('Produto'), '  p1  ')
+    selectByName('produtoId', 'p1')
+    selectByName('safraId', 's1')
+    selectByName('areaId', 'a1')
     await user.type(screen.getByLabelText('Quantidade'), '10')
-    await user.type(screen.getByLabelText('Safra'), 'S1')
-    await user.type(screen.getByLabelText('Área'), 'A1')
     await user.type(screen.getByLabelText('Código do lote'), 'LT-1')
     await user.type(screen.getByLabelText('Validade'), '2026-08-01')
     await user.click(screen.getByRole('button', { name: 'Registrar colheita' }))
@@ -86,8 +135,8 @@ describe('RegistrarColheitaDialog', () => {
           empresaId: 'e1',
           produtoId: 'p1',
           quantidade: 10,
-          safraId: 'S1',
-          areaId: 'A1',
+          safraId: 's1',
+          areaId: 'a1',
           codigoLote: 'LT-1',
         }),
       )
@@ -97,6 +146,7 @@ describe('RegistrarColheitaDialog', () => {
   })
 
   it('submete com campos opcionais vazios convertidos para null', async () => {
+    setLists()
     const onSubmit = vi.fn()
     const user = userEvent.setup({ delay: null })
     renderWithProviders(
@@ -109,7 +159,7 @@ describe('RegistrarColheitaDialog', () => {
       />,
     )
 
-    await user.type(screen.getByLabelText('Produto'), 'p2')
+    selectByName('produtoId', 'p1')
     await user.type(screen.getByLabelText('Quantidade'), '5')
     await user.click(screen.getByRole('button', { name: 'Registrar colheita' }))
 
@@ -125,7 +175,37 @@ describe('RegistrarColheitaDialog', () => {
     })
   })
 
+  it('volta safra e área para "Nenhuma" zerando os campos', async () => {
+    setLists()
+    const onSubmit = vi.fn()
+    const user = userEvent.setup({ delay: null })
+    renderWithProviders(
+      <RegistrarColheitaDialog
+        open
+        onOpenChange={vi.fn()}
+        empresaId="e1"
+        onSubmit={onSubmit}
+        isPending={false}
+      />,
+    )
+
+    selectByName('produtoId', 'p1')
+    selectByName('safraId', 's1')
+    selectByName('safraId', '__none__')
+    selectByName('areaId', 'a1')
+    selectByName('areaId', '__none__')
+    await user.type(screen.getByLabelText('Quantidade'), '7')
+    await user.click(screen.getByRole('button', { name: 'Registrar colheita' }))
+
+    await waitFor(() => {
+      expect(onSubmit).toHaveBeenCalledWith(
+        expect.objectContaining({ safraId: null, areaId: null }),
+      )
+    })
+  })
+
   it('desabilita os botões enquanto está pendente', () => {
+    setLists()
     renderWithProviders(
       <RegistrarColheitaDialog
         open
@@ -141,6 +221,7 @@ describe('RegistrarColheitaDialog', () => {
   })
 
   it('fecha ao clicar em cancelar', async () => {
+    setLists()
     const onOpenChange = vi.fn()
     const user = userEvent.setup({ delay: null })
     renderWithProviders(

@@ -1,12 +1,62 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { ProdutoFormDialog } from './produto-form-dialog'
 
+import type { Empresa } from '@/features/admin/api/empresas-api'
 import type { Produto } from '@/features/admin/api/produtos-api'
 
 import { renderWithProviders } from '@/test/render-with-providers'
+
+const useEmpresasMock = vi.fn()
+
+vi.mock('@/features/admin/api/empresas-api', () => ({
+  useEmpresas: () => useEmpresasMock(),
+}))
+
+function makeEmpresa(overrides: Partial<Empresa> = {}): Empresa {
+  return {
+    id: 'e1',
+    tenantId: 't1',
+    tipoPessoa: 'PJ',
+    razaoSocial: 'Agro LTDA',
+    nomeFantasia: 'Agro',
+    cnpjCpf: '00000000000000',
+    cnpjCpfFormatado: '00.000.000/0000-00',
+    inscricaoEstadual: null,
+    ieProdutorRural: null,
+    regimeTributario: 'simples',
+    crt: '1',
+    ambienteFiscal: 'homologacao',
+    serieNfe: 1,
+    status: 'ativo',
+    endereco: {
+      logradouro: null,
+      numero: null,
+      complemento: null,
+      bairro: null,
+      municipio: null,
+      uf: null,
+      cep: null,
+    },
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+    ...overrides,
+  }
+}
+
+function empresasResponse() {
+  return {
+    data: {
+      empresas: [makeEmpresa(), makeEmpresa({ id: 'e2', nomeFantasia: null, razaoSocial: 'Outra SA' })],
+      total: 2,
+      page: 1,
+      perPage: 100,
+      totalPages: 1,
+    },
+  }
+}
 
 function makeProduto(overrides: Partial<Produto> = {}): Produto {
   return {
@@ -30,13 +80,35 @@ function makeProduto(overrides: Partial<Produto> = {}): Produto {
   }
 }
 
+function selectEmpresa(value: string): void {
+  fireEvent.change(document.querySelector<HTMLSelectElement>('select[name="empresaId"]')!, {
+    target: { value },
+  })
+}
+
 describe('ProdutoFormDialog', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    useEmpresasMock.mockReturnValue(empresasResponse())
+  })
+
   it('não renderiza o conteúdo quando open é false', () => {
     renderWithProviders(
       <ProdutoFormDialog open={false} onOpenChange={vi.fn()} produto={null} onSubmit={vi.fn()} isPending={false} />,
     )
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('renderiza as empresas como opções', () => {
+    renderWithProviders(
+      <ProdutoFormDialog open onOpenChange={vi.fn()} produto={null} onSubmit={vi.fn()} isPending={false} />,
+    )
+
+    const select = document.querySelector<HTMLSelectElement>('select[name="empresaId"]')!
+    expect(Array.from(select.options).map((o) => o.value)).toEqual(
+      expect.arrayContaining(['e1', 'e2']),
+    )
   })
 
   it('valida campos obrigatórios e não chama onSubmit', async () => {
@@ -54,7 +126,7 @@ describe('ProdutoFormDialog', () => {
     expect(onSubmit).not.toHaveBeenCalled()
   })
 
-  it('cria com preço vazio e campos fiscais vazios virando null', async () => {
+  it('cria com a empresa selecionada e campos fiscais vazios virando "" no payload', async () => {
     const onSubmit = vi.fn()
     const user = userEvent.setup({ delay: null })
     renderWithProviders(
@@ -62,13 +134,13 @@ describe('ProdutoFormDialog', () => {
     )
 
     await user.type(screen.getByLabelText('Descrição'), 'Alface')
-    await user.type(screen.getByLabelText('Empresa'), 'e1')
+    selectEmpresa('e2')
     await user.type(screen.getByLabelText('Unidade de medida'), 'MC')
     await user.click(screen.getByRole('button', { name: 'Criar produto' }))
 
     await waitFor(() => {
       expect(onSubmit.mock.calls[0]![0]).toEqual({
-        empresaId: 'e1',
+        empresaId: 'e2',
         descricao: 'Alface',
         tipo: 'bruto',
         unidadeMedida: 'MC',
@@ -92,7 +164,7 @@ describe('ProdutoFormDialog', () => {
       target: { value: 'embalado' },
     })
     await user.type(screen.getByLabelText('Descrição'), 'Mix 200g')
-    await user.type(screen.getByLabelText('Empresa'), 'e1')
+    selectEmpresa('e1')
     await user.type(screen.getByLabelText('Unidade de medida'), 'UN')
     await user.type(screen.getByLabelText('Preço padrão'), '12.5')
     await user.type(screen.getByLabelText('NCM'), '1234')
@@ -100,6 +172,7 @@ describe('ProdutoFormDialog', () => {
 
     await waitFor(() => {
       expect(onSubmit.mock.calls[0]![0]).toMatchObject({
+        empresaId: 'e1',
         tipo: 'embalado',
         precoPadrao: '12.5',
         ncm: '1234',
@@ -107,7 +180,16 @@ describe('ProdutoFormDialog', () => {
     })
   })
 
-  it('vem pré-preenchido no modo edição', () => {
+  it('mostra estado vazio quando não há empresas', () => {
+    useEmpresasMock.mockReturnValue({ data: undefined })
+    renderWithProviders(
+      <ProdutoFormDialog open onOpenChange={vi.fn()} produto={null} onSubmit={vi.fn()} isPending={false} />,
+    )
+
+    expect(screen.getByText('Nenhuma empresa cadastrada')).toBeInTheDocument()
+  })
+
+  it('vem pré-preenchido no modo edição e desabilita o select de empresa', () => {
     renderWithProviders(
       <ProdutoFormDialog open onOpenChange={vi.fn()} produto={makeProduto()} onSubmit={vi.fn()} isPending={false} />,
     )
@@ -115,6 +197,9 @@ describe('ProdutoFormDialog', () => {
     expect(screen.getByRole('heading', { name: 'Editar produto' })).toBeInTheDocument()
     expect(screen.getByLabelText('Descrição')).toHaveValue('Soja')
     expect(screen.getByLabelText('Preço padrão')).toHaveValue('9.5')
+    const select = document.querySelector<HTMLSelectElement>('select[name="empresaId"]')!
+    expect(select.value).toBe('e1')
+    expect(select).toBeDisabled()
   })
 
   it('preenche string vazia quando os campos do produto são nulos', () => {
@@ -140,7 +225,7 @@ describe('ProdutoFormDialog', () => {
     )
 
     await user.type(screen.getByLabelText('Descrição'), 'Alface')
-    await user.type(screen.getByLabelText('Empresa'), 'e1')
+    selectEmpresa('e1')
     await user.type(screen.getByLabelText('Unidade de medida'), 'UN')
     await user.type(screen.getByLabelText('Preço padrão'), '1'.repeat(21))
     await user.type(screen.getByLabelText('NCM'), 'x'.repeat(21))

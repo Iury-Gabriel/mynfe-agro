@@ -262,6 +262,7 @@ export function RemessasPage(): ReactElement {
         <VendaFormDialog
           open={formOpen}
           onOpenChange={setFormOpen}
+          empresaId={empresaId}
           title="Nova remessa"
           description="Cliente e itens da entrega. A empresa ativa é a faturadora."
           submitLabel="Criar remessa"

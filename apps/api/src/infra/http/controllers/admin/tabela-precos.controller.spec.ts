@@ -10,6 +10,8 @@ import type { CanActivate, ExecutionContext, INestApplication } from '@nestjs/co
 
 import { left, right } from '@/core/either'
 import { UnexpectedError } from '@/core/errors/unexpected-error'
+import { ClienteNotFoundError } from '@/domain/application/use-cases/errors/cliente-not-found-error'
+import { ProdutoNotFoundError } from '@/domain/application/use-cases/errors/produto-not-found-error'
 import { TabelaPrecoNotFoundError } from '@/domain/application/use-cases/errors/tabela-preco-not-found-error'
 import { CreateTabelaPrecoUseCase } from '@/domain/application/use-cases/precos/create-tabela-preco-use-case'
 import { DeleteTabelaPrecoUseCase } from '@/domain/application/use-cases/precos/delete-tabela-preco-use-case'
@@ -166,6 +168,20 @@ describe(TabelaPrecosController.name, () => {
       createTabelaPreco.execute.mockResolvedValue(left(new UnexpectedError(new Error('x'))))
       const res = await request(app.getHttpServer()).post('/tabela-precos').send(validCreateBody)
       expect(res.status).toBe(500)
+    })
+
+    it('retorna 404 quando o cliente não existe', async () => {
+      createTabelaPreco.execute.mockResolvedValue(left(new ClienteNotFoundError()))
+      const res = await request(app.getHttpServer()).post('/tabela-precos').send(validCreateBody)
+      expect(res.status).toBe(404)
+      expect(res.body.error.kind).toBe('ClienteNotFound')
+    })
+
+    it('retorna 404 quando o produto não existe', async () => {
+      createTabelaPreco.execute.mockResolvedValue(left(new ProdutoNotFoundError()))
+      const res = await request(app.getHttpServer()).post('/tabela-precos').send(validCreateBody)
+      expect(res.status).toBe(404)
+      expect(res.body.error.kind).toBe('ProdutoNotFound')
     })
 
     it('retorna 403 sem permissão', async () => {

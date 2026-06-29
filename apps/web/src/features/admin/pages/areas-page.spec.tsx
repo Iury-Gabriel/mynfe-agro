@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -31,6 +31,18 @@ const useAuthMock = vi.fn<() => { user: { permissions: string[] } }>()
 vi.mock('@/providers/auth-context', () => ({
   useAuth: () => useAuthMock(),
 }))
+
+vi.mock('@/features/admin/api/fazendas-api', () => ({
+  useFazendas: () => ({
+    data: { fazendas: [{ id: 'f1', nome: 'Fazenda Boa Vista' }] },
+  }),
+}))
+
+function selectFazenda(value: string): void {
+  fireEvent.change(document.querySelector<HTMLSelectElement>('select[name="fazendaId"]')!, {
+    target: { value },
+  })
+}
 
 const ALL_PERMS = ['area:read', 'area:create', 'area:update', 'area:delete']
 
@@ -115,7 +127,7 @@ describe('AreasPage', () => {
 
     await screen.findByText('Nenhum registro encontrado.')
     await user.click(screen.getByRole('button', { name: /Nova área/ }))
-    await user.type(screen.getByLabelText('Fazenda'), 'f1')
+    selectFazenda('f1')
     await user.type(screen.getByLabelText('Identificação'), 'Talhão Z')
     await user.click(screen.getByRole('button', { name: 'Criar área' }))
 
@@ -133,7 +145,7 @@ describe('AreasPage', () => {
 
     await screen.findByText('Nenhum registro encontrado.')
     await user.click(screen.getByRole('button', { name: /Nova área/ }))
-    await user.type(screen.getByLabelText('Fazenda'), 'f1')
+    selectFazenda('f1')
     await user.type(screen.getByLabelText('Identificação'), 'Talhão Z')
     await user.click(screen.getByRole('button', { name: 'Criar área' }))
 

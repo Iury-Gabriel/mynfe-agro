@@ -58,3 +58,4 @@ uploads/
 !.claude/tasks/CURRENT_TASK.md.example
 !.claude/tasks/PAUSED/.gitkeep
 !.claude/tasks/DONE/.gitkeep
+cov-out/

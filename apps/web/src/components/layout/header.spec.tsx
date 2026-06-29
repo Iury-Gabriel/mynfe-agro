@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react'
+import { fireEvent, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
 import { Header } from './header'
@@ -53,5 +53,16 @@ describe('Header', () => {
     renderWithProviders(<Header />)
 
     expect(screen.queryByTestId('empresa-switcher')).not.toBeInTheDocument()
+  })
+
+  it('invoca onMenuClick ao clicar no botão hambúrguer', () => {
+    useAuthMock.mockReturnValue({ user: null })
+    const onMenuClick = vi.fn()
+
+    renderWithProviders(<Header onMenuClick={onMenuClick} />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Abrir menu' }))
+
+    expect(onMenuClick).toHaveBeenCalledTimes(1)
   })
 })
