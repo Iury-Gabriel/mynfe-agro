@@ -9,7 +9,7 @@ import type { PrismaClient } from '@prisma/client'
 
 async function createTestUser(
   prisma: PrismaClient,
-  override?: Partial<{ name: string; email: string }>,
+  override?: Partial<{ name: string; email: string; tenantId: string }>,
 ) {
   return prisma.user.create({
     data: {
@@ -17,10 +17,16 @@ async function createTestUser(
       email: override?.email ?? `test-${randomUUID()}@example.com`,
       name: override?.name ?? 'Test User',
       emailVerified: false,
+      tenantId: override?.tenantId ?? null,
       createdAt: new Date(),
       updatedAt: new Date(),
     },
   })
+}
+
+async function createTenant(prisma: PrismaClient): Promise<string> {
+  const tenant = await prisma.tenant.create({ data: { nome: `tenant-${randomUUID()}` } })
+  return tenant.id
 }
 
 async function createTestRole(prisma: PrismaClient, override?: Partial<{ name: string }>) {
@@ -50,6 +56,7 @@ describe(PrismaUserRepository.name, () => {
     await prisma.role.deleteMany()
     await prisma.auditEvent.deleteMany()
     await prisma.user.deleteMany()
+    await prisma.tenant.deleteMany()
   })
 
   describe('findById', () => {
@@ -100,33 +107,36 @@ describe(PrismaUserRepository.name, () => {
 
   describe('findMany', () => {
     it('returns first page with nextCursor when there are more rows', async () => {
-      await createTestUser(prisma, { name: 'Charlie' })
-      await createTestUser(prisma, { name: 'Alice' })
-      await createTestUser(prisma, { name: 'Bob' })
+      const tenantId = await createTenant(prisma)
+      await createTestUser(prisma, { name: 'Charlie', tenantId })
+      await createTestUser(prisma, { name: 'Alice', tenantId })
+      await createTestUser(prisma, { name: 'Bob', tenantId })
 
-      const result = await sut.findMany({ limit: 2 })
+      const result = await sut.findMany(tenantId, { limit: 2 })
 
       expect(result.users).toHaveLength(2)
       expect(result.nextCursor).not.toBeNull()
     })
 
     it('returns nextCursor null on the last page', async () => {
-      await createTestUser(prisma, { name: 'Alice' })
-      await createTestUser(prisma, { name: 'Bob' })
+      const tenantId = await createTenant(prisma)
+      await createTestUser(prisma, { name: 'Alice', tenantId })
+      await createTestUser(prisma, { name: 'Bob', tenantId })
 
-      const result = await sut.findMany({ limit: 10 })
+      const result = await sut.findMany(tenantId, { limit: 10 })
 
       expect(result.users).toHaveLength(2)
       expect(result.nextCursor).toBeNull()
     })
 
     it('continues from the cursor without repeating rows (orders by id desc)', async () => {
+      const tenantId = await createTenant(prisma)
       for (let i = 0; i < 5; i++) {
-        await createTestUser(prisma, { name: `User ${i}` })
+        await createTestUser(prisma, { name: `User ${i}`, tenantId })
       }
 
-      const first = await sut.findMany({ limit: 2 })
-      const second = await sut.findMany({ limit: 2, cursor: first.nextCursor! })
+      const first = await sut.findMany(tenantId, { limit: 2 })
+      const second = await sut.findMany(tenantId, { limit: 2, cursor: first.nextCursor! })
 
       const firstIds = first.users.map((u) => u.id.toString())
       const secondIds = second.users.map((u) => u.id.toString())
@@ -137,15 +147,28 @@ describe(PrismaUserRepository.name, () => {
     })
 
     it('retorna usuários sem enriquecer roleIds (enriquecimento é do use-case)', async () => {
-      const userA = await createTestUser(prisma, { name: 'Alice' })
-      await createTestUser(prisma, { name: 'Bob' })
+      const tenantId = await createTenant(prisma)
+      const userA = await createTestUser(prisma, { name: 'Alice', tenantId })
+      await createTestUser(prisma, { name: 'Bob', tenantId })
       const roleId = await createTestRole(prisma)
       await prisma.userRoleAssignment.create({ data: { userId: userA.id, roleId } })
 
-      const result = await sut.findMany({ limit: 10 })
+      const result = await sut.findMany(tenantId, { limit: 10 })
 
       const alice = result.users.find((u) => u.id.toString() === userA.id)
       expect([...alice!.roleIds]).toEqual([])
+    })
+
+    it('isola por tenant: não retorna usuários de outro tenant', async () => {
+      const tenantA = await createTenant(prisma)
+      const tenantB = await createTenant(prisma)
+      const userA = await createTestUser(prisma, { name: 'Alice', tenantId: tenantA })
+      await createTestUser(prisma, { name: 'Bob', tenantId: tenantB })
+
+      const result = await sut.findMany(tenantA, { limit: 10 })
+
+      expect(result.users).toHaveLength(1)
+      expect(result.users[0].id.toString()).toBe(userA.id)
     })
   })
 

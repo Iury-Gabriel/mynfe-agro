@@ -32,14 +32,17 @@ export class PrismaRoleRepository extends RoleRepository {
     return raw ? PrismaRoleMapper.toDomain(raw) : null
   }
 
-  async findMany(params: CursorPaginationParams): Promise<{ roles: Role[]; nextCursor: string | null }> {
+  async findMany(
+    tenantId: string,
+    params: CursorPaginationParams,
+  ): Promise<{ roles: Role[]; nextCursor: string | null }> {
     const limit = normalizeCursorLimit(params.limit)
 
     const raws = await this.prisma.role.findMany({
       include: { permissions: true },
       take: limit + 1,
       orderBy: { id: 'desc' },
-      ...(params.cursor ? { where: { id: { lt: params.cursor } } } : {}),
+      where: { tenantId, ...(params.cursor ? { id: { lt: params.cursor } } : {}) },
     })
 
     const hasMore = raws.length > limit

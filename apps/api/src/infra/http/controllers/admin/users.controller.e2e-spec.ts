@@ -13,12 +13,14 @@ import { AUTH_INSTANCE, AuthService } from '@/infra/auth/auth.service'
 
 
 const ACTOR_ID = 'test-actor'
+const TENANT_ID = 'tenant-users-e2e'
 
 const mockUser = {
   id: ACTOR_ID,
   email: 'test@example.com',
   name: 'Test',
   emailVerified: true,
+  tenantId: TENANT_ID,
   permissions: ['admin:roles', 'admin:users'],
 }
 
@@ -40,6 +42,7 @@ describe(UsersController.name + ' (e2e)', () => {
                 email: mockUser.email,
                 name: mockUser.name,
                 emailVerified: mockUser.emailVerified,
+                tenantId: mockUser.tenantId,
               },
               permissions: mockUser.permissions,
             }),
@@ -69,15 +72,23 @@ describe(UsersController.name + ' (e2e)', () => {
     await prisma.session.deleteMany()
     await prisma.account.deleteMany()
     await prisma.user.deleteMany()
+    await prisma.tenant.upsert({
+      where: { id: TENANT_ID },
+      update: {},
+      create: { id: TENANT_ID, nome: 'Tenant Users E2E' },
+    })
   })
 
-  async function createUser(overrides?: Partial<{ id: string; email: string; name: string }>) {
+  async function createUser(
+    overrides?: Partial<{ id: string; email: string; name: string; tenantId: string | null }>,
+  ) {
     return prisma.user.create({
       data: {
         id: overrides?.id ?? 'user-1',
         email: overrides?.email ?? 'u1@test.com',
         name: overrides?.name ?? 'User One',
         emailVerified: false,
+        tenantId: overrides?.tenantId ?? null,
         createdAt: new Date(),
         updatedAt: new Date(),
       },
@@ -86,7 +97,7 @@ describe(UsersController.name + ' (e2e)', () => {
 
   describe('GET /api/admin/users', () => {
     it('retorna 200 com lista de usuários', async () => {
-      await createUser()
+      await createUser({ tenantId: TENANT_ID })
 
       const res = await request(app.getHttpServer()).get('/api/admin/users')
 
@@ -101,6 +112,18 @@ describe(UsersController.name + ' (e2e)', () => {
       expect(res.status).toBe(200)
       expect(res.body.users).toHaveLength(0)
       expect(res.body.nextCursor).toBeNull()
+    })
+
+    it('isola por tenant: não retorna usuários de outro tenant', async () => {
+      const otherTenant = await prisma.tenant.create({ data: { nome: 'Outro Tenant' } })
+      await createUser({ id: 'user-tenant', email: 'in@tenant.com', tenantId: TENANT_ID })
+      await createUser({ id: 'user-other', email: 'out@tenant.com', tenantId: otherTenant.id })
+
+      const res = await request(app.getHttpServer()).get('/api/admin/users')
+
+      expect(res.status).toBe(200)
+      expect(res.body.users).toHaveLength(1)
+      expect(res.body.users[0].id).toBe('user-tenant')
     })
   })
 

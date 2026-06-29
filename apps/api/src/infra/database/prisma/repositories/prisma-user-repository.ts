@@ -46,14 +46,17 @@ export class PrismaUserRepository extends UserRepository {
     return PrismaUserMapper.toDomain(raw, raw.roleAssignments.map((a) => a.roleId))
   }
 
-  async findMany(params: CursorPaginationParams): Promise<{ users: User[]; nextCursor: string | null }> {
+  async findMany(
+    tenantId: string,
+    params: CursorPaginationParams,
+  ): Promise<{ users: User[]; nextCursor: string | null }> {
     const limit = normalizeCursorLimit(params.limit)
 
     const raws = await this.prisma.user.findMany({
       select: USER_COLUMNS,
       take: limit + 1,
       orderBy: { id: 'desc' },
-      ...(params.cursor ? { where: { id: { lt: params.cursor } } } : {}),
+      where: { tenantId, ...(params.cursor ? { id: { lt: params.cursor } } : {}) },
     })
 
     const hasMore = raws.length > limit

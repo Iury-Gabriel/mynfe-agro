@@ -12,11 +12,14 @@ import { AppModule } from '@/infra/app.module'
 import { AUTH_INSTANCE, AuthService } from '@/infra/auth/auth.service'
 
 
+const TENANT_ID = 'tenant-roles-e2e'
+
 const mockUser = {
   id: 'test-actor',
   email: 'test@example.com',
   name: 'Test',
   emailVerified: true,
+  tenantId: TENANT_ID,
   permissions: ['admin:roles', 'admin:users'],
 }
 
@@ -38,6 +41,7 @@ describe(RolesController.name + ' (e2e)', () => {
                 email: mockUser.email,
                 name: mockUser.name,
                 emailVerified: mockUser.emailVerified,
+                tenantId: mockUser.tenantId,
               },
               permissions: mockUser.permissions,
             }),
@@ -65,6 +69,11 @@ describe(RolesController.name + ' (e2e)', () => {
     await prisma.role.deleteMany()
     await prisma.auditEvent.deleteMany()
     await prisma.user.deleteMany()
+    await prisma.tenant.upsert({
+      where: { id: TENANT_ID },
+      update: {},
+      create: { id: TENANT_ID, nome: 'Tenant Roles E2E' },
+    })
   })
 
   describe('GET /api/admin/roles', () => {
@@ -78,7 +87,7 @@ describe(RolesController.name + ' (e2e)', () => {
 
     it('retorna 200 com roles criadas', async () => {
       await prisma.role.create({
-        data: { id: 'role-e2e-1', name: 'Admin', isSystem: false, createdAt: new Date(), updatedAt: new Date() },
+        data: { id: 'role-e2e-1', name: 'Admin', isSystem: false, tenantId: TENANT_ID, createdAt: new Date(), updatedAt: new Date() },
       })
 
       const res = await request(app.getHttpServer()).get('/api/admin/roles')
@@ -87,6 +96,22 @@ describe(RolesController.name + ' (e2e)', () => {
       expect(res.body.roles).toHaveLength(1)
       expect(res.body.roles[0].id).toBe('role-e2e-1')
       expect(res.body).toHaveProperty('nextCursor')
+    })
+
+    it('isola por tenant: não retorna roles de outro tenant', async () => {
+      const otherTenant = await prisma.tenant.create({ data: { nome: 'Outro Tenant' } })
+      await prisma.role.create({
+        data: { id: 'role-tenant', name: 'Administrador', isSystem: false, tenantId: TENANT_ID, createdAt: new Date(), updatedAt: new Date() },
+      })
+      await prisma.role.create({
+        data: { id: 'role-other-tenant', name: 'Administrador', isSystem: false, tenantId: otherTenant.id, createdAt: new Date(), updatedAt: new Date() },
+      })
+
+      const res = await request(app.getHttpServer()).get('/api/admin/roles')
+
+      expect(res.status).toBe(200)
+      expect(res.body.roles).toHaveLength(1)
+      expect(res.body.roles[0].id).toBe('role-tenant')
     })
   })
 
