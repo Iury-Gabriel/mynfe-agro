@@ -8,16 +8,6 @@ vi.mock('./sidebar', () => ({
   Sidebar: () => <aside data-testid="sidebar" />,
 }))
 
-vi.mock('./header', () => ({
-  Header: ({ onMenuClick }: { onMenuClick?: () => void }) => (
-    <header data-testid="header">
-      <button type="button" onClick={onMenuClick}>
-        abrir-menu
-      </button>
-    </header>
-  ),
-}))
-
 vi.mock('./sidebar-nav', () => ({
   SidebarNav: ({ onNavigate }: { onNavigate?: () => void }) => (
     <div data-testid="sidebar-nav">
@@ -41,12 +31,12 @@ function renderShell() {
 }
 
 describe('AppShell', () => {
-  it('renderiza sidebar, header e o conteúdo da rota filha via Outlet', () => {
+  it('renderiza a sidebar e o conteúdo da rota filha via Outlet, sem header', () => {
     renderShell()
 
     expect(screen.getByTestId('sidebar')).toBeInTheDocument()
-    expect(screen.getByTestId('header')).toBeInTheDocument()
     expect(screen.getByText('conteudo da pagina')).toBeInTheDocument()
+    expect(screen.queryByRole('banner')).not.toBeInTheDocument()
   })
 
   it('mantém o drawer mobile fechado inicialmente', () => {
@@ -55,10 +45,10 @@ describe('AppShell', () => {
     expect(screen.queryByText('Menu de navegação')).not.toBeInTheDocument()
   })
 
-  it('abre o drawer mobile ao clicar no hambúrguer do header', () => {
+  it('abre o drawer mobile ao clicar no hambúrguer flutuante', () => {
     renderShell()
 
-    fireEvent.click(screen.getByText('abrir-menu'))
+    fireEvent.click(screen.getByRole('button', { name: 'Abrir menu' }))
 
     expect(screen.getByText('Menu de navegação')).toBeInTheDocument()
     expect(screen.getByTestId('sidebar-nav')).toBeInTheDocument()
@@ -67,7 +57,7 @@ describe('AppShell', () => {
   it('fecha o drawer ao navegar por um item (onNavigate)', () => {
     renderShell()
 
-    fireEvent.click(screen.getByText('abrir-menu'))
+    fireEvent.click(screen.getByRole('button', { name: 'Abrir menu' }))
     expect(screen.getByText('Menu de navegação')).toBeInTheDocument()
 
     fireEvent.click(screen.getByText('ir-para-pagina'))
