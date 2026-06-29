@@ -43,7 +43,7 @@ jobs:
     if: ${{ github.event_name == 'push' }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Resolver namespace do registry
         id: registry
@@ -99,7 +99,7 @@ jobs:
     runs-on: [self-hosted, production]
     needs: build-images
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Resolver namespace do registry
         id: registry
@@ -213,7 +213,7 @@ jobs:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.action == 'deploy' }}
     runs-on: [self-hosted, production]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Resolver namespace do registry
         id: registry
@@ -325,6 +325,6 @@ jobs:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.action == 'rollback' }}
     runs-on: [self-hosted, production]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Reverter symlink pra cor anterior
         run: sudo bash infra/deploy/rollback.sh
