@@ -4,37 +4,52 @@ import { ADMIN_PERMISSIONS, PERMISSION_CATEGORIES } from './types'
 
 
 describe('types — constantes de permissao', () => {
-  it('ADMIN_PERMISSIONS contém todas as permissoes esperadas', () => {
+  it('ADMIN_PERMISSIONS contém as 57 permissoes do catálogo', () => {
+    expect(ADMIN_PERMISSIONS).toHaveLength(57)
+    expect(ADMIN_PERMISSIONS).toContain('view:dashboard')
     expect(ADMIN_PERMISSIONS).toContain('admin:users')
     expect(ADMIN_PERMISSIONS).toContain('admin:roles')
-    expect(ADMIN_PERMISSIONS).toContain('view:dashboard')
-    expect(ADMIN_PERMISSIONS).toContain('view:settings')
-    expect(ADMIN_PERMISSIONS).toContain('manage:settings')
-    expect(ADMIN_PERMISSIONS).toHaveLength(5)
+    expect(ADMIN_PERMISSIONS).toContain('auditoria:read')
+    expect(ADMIN_PERMISSIONS).toContain('empresa:status')
+    expect(ADMIN_PERMISSIONS).toContain('nota:cancelar')
+    expect(ADMIN_PERMISSIONS).toContain('consolidacao:create')
   })
 
-  it('PERMISSION_CATEGORIES tem 3 categorias', () => {
-    expect(PERMISSION_CATEGORIES).toHaveLength(3)
+  it('não tem permissoes duplicadas em ADMIN_PERMISSIONS', () => {
+    expect(new Set(ADMIN_PERMISSIONS).size).toBe(ADMIN_PERMISSIONS.length)
   })
 
-  it('categoria Administracao contém admin:users e admin:roles', () => {
+  it('PERMISSION_CATEGORIES tem 14 categorias', () => {
+    expect(PERMISSION_CATEGORIES).toHaveLength(14)
+  })
+
+  it('a primeira categoria é Dashboard', () => {
+    expect(PERMISSION_CATEGORIES[0]?.label).toBe('Dashboard')
+  })
+
+  it('categoria Administração contém as permissoes administrativas', () => {
     const cat = PERMISSION_CATEGORIES.find((c) => c.label === 'Administração')
     expect(cat).toBeDefined()
-    expect(cat?.permissions).toContain('admin:users')
-    expect(cat?.permissions).toContain('admin:roles')
+    expect(cat?.permissions).toEqual([
+      'admin:users',
+      'admin:roles',
+      'view:settings',
+      'manage:settings',
+      'auditoria:read',
+    ])
   })
 
-  it('categoria Visualizacao contém view:dashboard e view:settings', () => {
-    const cat = PERMISSION_CATEGORIES.find((c) => c.label === 'Visualização')
+  it('categoria Vendas agrupa pedidos, remessas e consolidação', () => {
+    const cat = PERMISSION_CATEGORIES.find((c) => c.label === 'Vendas')
     expect(cat).toBeDefined()
-    expect(cat?.permissions).toContain('view:dashboard')
-    expect(cat?.permissions).toContain('view:settings')
+    expect(cat?.permissions).toContain('pedido:confirm')
+    expect(cat?.permissions).toContain('remessa:cancel')
+    expect(cat?.permissions).toContain('consolidacao:create')
   })
 
-  it('categoria Configuracoes contém manage:settings', () => {
-    const cat = PERMISSION_CATEGORIES.find((c) => c.label === 'Configurações')
-    expect(cat).toBeDefined()
-    expect(cat?.permissions).toContain('manage:settings')
+  it('categoria Fiscal contém as permissoes de nota', () => {
+    const cat = PERMISSION_CATEGORIES.find((c) => c.label === 'Fiscal')
+    expect(cat?.permissions).toEqual(['nota:read', 'nota:emitir', 'nota:cancelar'])
   })
 
   it('todas as permissoes de todas as categorias estao em ADMIN_PERMISSIONS', () => {
@@ -44,10 +59,16 @@ describe('types — constantes de permissao', () => {
     }
   })
 
-  it('a uniao de todas as categorias cobre ADMIN_PERMISSIONS completo', () => {
+  it('a uniao de todas as categorias cobre ADMIN_PERMISSIONS completo, sem sobra', () => {
     const allPerms = PERMISSION_CATEGORIES.flatMap((c) => c.permissions)
+    expect(allPerms).toHaveLength(ADMIN_PERMISSIONS.length)
     for (const perm of ADMIN_PERMISSIONS) {
       expect(allPerms).toContain(perm)
     }
+  })
+
+  it('nenhuma permissao aparece em duas categorias', () => {
+    const allPerms = PERMISSION_CATEGORIES.flatMap((c) => c.permissions)
+    expect(new Set(allPerms).size).toBe(allPerms.length)
   })
 })

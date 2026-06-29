@@ -25,6 +25,24 @@ describe('envSchema', () => {
     expect(sut.BULL_BOARD_PATH).toBe('/admin/queues')
   })
 
+  it('aplica defaults de rate limit de auth (window 60, max 300)', () => {
+    const sut = envSchema.parse(baseEnv())
+
+    expect(sut.AUTH_RATE_LIMIT_WINDOW).toBe(60)
+    expect(sut.AUTH_RATE_LIMIT_MAX).toBe(300)
+  })
+
+  it('coage AUTH_RATE_LIMIT_WINDOW e AUTH_RATE_LIMIT_MAX a partir de string', () => {
+    const sut = envSchema.parse({
+      ...baseEnv(),
+      AUTH_RATE_LIMIT_WINDOW: '120',
+      AUTH_RATE_LIMIT_MAX: '50',
+    })
+
+    expect(sut.AUTH_RATE_LIMIT_WINDOW).toBe(120)
+    expect(sut.AUTH_RATE_LIMIT_MAX).toBe(50)
+  })
+
   it('coage PORT numérico a partir de string', () => {
     const sut = envSchema.parse({ ...baseEnv(), PORT: '8080' })
 

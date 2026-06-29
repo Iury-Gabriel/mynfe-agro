@@ -1,12 +1,47 @@
-import { screen, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { SafraFormDialog } from './safra-form-dialog'
 
+import type { Area } from '@/features/admin/api/areas-api'
 import type { Safra } from '@/features/admin/api/safras-api'
 
 import { renderWithProviders } from '@/test/render-with-providers'
+
+const useAreasMock = vi.fn()
+
+vi.mock('@/features/admin/api/areas-api', () => ({
+  useAreas: () => useAreasMock(),
+}))
+
+function makeArea(overrides: Partial<Area> = {}): Area {
+  return {
+    id: 'a1',
+    tenantId: 't1',
+    fazendaId: 'f1',
+    identificacao: 'Talhão 1',
+    tamanho: null,
+    unidadeTamanho: null,
+    rotulo: null,
+    geometria: null,
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+    ...overrides,
+  }
+}
+
+function areasResponse() {
+  return {
+    data: {
+      areas: [makeArea(), makeArea({ id: 'a2', identificacao: 'Gleba B' })],
+      total: 2,
+      page: 1,
+      perPage: 100,
+      totalPages: 1,
+    },
+  }
+}
 
 function makeSafra(overrides: Partial<Safra> = {}): Safra {
   return {
@@ -26,36 +61,42 @@ function makeSafra(overrides: Partial<Safra> = {}): Safra {
   }
 }
 
+function selectArea(value: string): void {
+  fireEvent.change(document.querySelector<HTMLSelectElement>('select[name="areaId"]')!, {
+    target: { value },
+  })
+}
+
 describe('SafraFormDialog', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    useAreasMock.mockReturnValue(areasResponse())
   })
 
   it('não renderiza o conteúdo quando open é false', () => {
     renderWithProviders(
-      <SafraFormDialog
-        open={false}
-        onOpenChange={vi.fn()}
-        safra={null}
-        onSubmit={vi.fn()}
-        isPending={false}
-      />,
+      <SafraFormDialog open={false} onOpenChange={vi.fn()} safra={null} onSubmit={vi.fn()} isPending={false} />,
     )
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('renderiza as áreas como opções do select', () => {
+    renderWithProviders(
+      <SafraFormDialog open onOpenChange={vi.fn()} safra={null} onSubmit={vi.fn()} isPending={false} />,
+    )
+
+    const select = document.querySelector<HTMLSelectElement>('select[name="areaId"]')!
+    expect(Array.from(select.options).map((o) => o.value)).toEqual(
+      expect.arrayContaining(['a1', 'a2']),
+    )
   })
 
   it('valida campos obrigatórios e não chama onSubmit', async () => {
     const onSubmit = vi.fn()
     const user = userEvent.setup({ delay: null })
     renderWithProviders(
-      <SafraFormDialog
-        open
-        onOpenChange={vi.fn()}
-        safra={null}
-        onSubmit={onSubmit}
-        isPending={false}
-      />,
+      <SafraFormDialog open onOpenChange={vi.fn()} safra={null} onSubmit={onSubmit} isPending={false} />,
     )
 
     await user.click(screen.getByRole('button', { name: 'Criar safra' }))
@@ -65,20 +106,14 @@ describe('SafraFormDialog', () => {
     expect(onSubmit).not.toHaveBeenCalled()
   })
 
-  it('chama onSubmit com o payload normalizado ao criar', async () => {
+  it('chama onSubmit com a área selecionada e payload normalizado', async () => {
     const onSubmit = vi.fn()
     const user = userEvent.setup({ delay: null })
     renderWithProviders(
-      <SafraFormDialog
-        open
-        onOpenChange={vi.fn()}
-        safra={null}
-        onSubmit={onSubmit}
-        isPending={false}
-      />,
+      <SafraFormDialog open onOpenChange={vi.fn()} safra={null} onSubmit={onSubmit} isPending={false} />,
     )
 
-    await user.type(screen.getByLabelText('Área'), 'a1')
+    selectArea('a2')
     await user.type(screen.getByLabelText('Cultura'), 'Soja')
     await user.type(screen.getByLabelText('Variedade'), 'TMG')
     await user.type(screen.getByLabelText('Estimativa de produção'), '3000')
@@ -86,7 +121,7 @@ describe('SafraFormDialog', () => {
 
     await waitFor(() => {
       expect(onSubmit).toHaveBeenCalledWith({
-        areaId: 'a1',
+        areaId: 'a2',
         cultura: 'Soja',
         variedade: 'TMG',
         dataPlantio: null,
@@ -97,19 +132,24 @@ describe('SafraFormDialog', () => {
     })
   })
 
+  it('mostra estado vazio quando não há áreas', () => {
+    useAreasMock.mockReturnValue({ data: undefined })
+    renderWithProviders(
+      <SafraFormDialog open onOpenChange={vi.fn()} safra={null} onSubmit={vi.fn()} isPending={false} />,
+    )
+
+    expect(screen.getByText('Nenhuma área cadastrada')).toBeInTheDocument()
+  })
+
   it('preenche os campos a partir da safra em edição e desabilita a área', () => {
     renderWithProviders(
-      <SafraFormDialog
-        open
-        onOpenChange={vi.fn()}
-        safra={makeSafra()}
-        onSubmit={vi.fn()}
-        isPending={false}
-      />,
+      <SafraFormDialog open onOpenChange={vi.fn()} safra={makeSafra()} onSubmit={vi.fn()} isPending={false} />,
     )
 
     expect(screen.getByRole('heading', { name: 'Editar safra' })).toBeInTheDocument()
-    expect(screen.getByLabelText('Área')).toBeDisabled()
+    const select = document.querySelector<HTMLSelectElement>('select[name="areaId"]')!
+    expect(select.value).toBe('a1')
+    expect(select).toBeDisabled()
     expect(screen.getByLabelText('Cultura')).toHaveValue('Soja')
   })
 
@@ -132,13 +172,7 @@ describe('SafraFormDialog', () => {
     const onOpenChange = vi.fn()
     const user = userEvent.setup({ delay: null })
     renderWithProviders(
-      <SafraFormDialog
-        open
-        onOpenChange={onOpenChange}
-        safra={null}
-        onSubmit={vi.fn()}
-        isPending={false}
-      />,
+      <SafraFormDialog open onOpenChange={onOpenChange} safra={null} onSubmit={vi.fn()} isPending={false} />,
     )
 
     await user.click(screen.getByRole('button', { name: 'Cancelar' }))

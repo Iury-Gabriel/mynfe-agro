@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Plus, Trash2 } from 'lucide-react'
 import { useEffect } from 'react'
-import { useFieldArray, useForm } from 'react-hook-form'
+import { Controller, useFieldArray, useForm } from 'react-hook-form'
 import { z } from 'zod'
 
 import type { ReactElement } from 'react'
@@ -17,6 +17,18 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { useClientes } from '@/features/admin/api/clientes-api'
+import { useProdutos } from '@/features/admin/api/produtos-api'
+import { useLotes } from '@/features/estoque/api/lotes-api'
+
+const NONE = '__none__'
 
 export interface VendaFormItem {
   produtoId: string
@@ -67,6 +79,7 @@ function emptyDefaults(): FormValues {
 interface VendaFormDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  empresaId: string
   title: string
   description: string
   submitLabel: string
@@ -78,6 +91,7 @@ interface VendaFormDialogProps {
 export function VendaFormDialog({
   open,
   onOpenChange,
+  empresaId,
   title,
   description,
   submitLabel,
@@ -97,6 +111,10 @@ export function VendaFormDialog({
   })
 
   const { fields, append, remove } = useFieldArray({ control, name: 'itens' })
+
+  const clientes = useClientes().data?.clientes ?? []
+  const produtos = useProdutos().data?.produtos ?? []
+  const lotes = useLotes({ empresaId }).data?.lotes ?? []
 
   useEffect(() => {
     if (open) reset(emptyDefaults())
@@ -134,14 +152,41 @@ export function VendaFormDialog({
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="venda-cliente">Cliente</Label>
-              <Input id="venda-cliente" {...register('clienteId')} />
+              <Controller
+                control={control}
+                name="clienteId"
+                render={({ field }) => (
+                  <Select
+                    name="clienteId"
+                    value={field.value}
+                    onValueChange={(v) => field.onChange(v)}
+                  >
+                    <SelectTrigger id="venda-cliente" aria-label="Cliente" className="h-11">
+                      <SelectValue placeholder="Selecione um cliente" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {clientes.length === 0 ? (
+                        <SelectItem value={NONE} disabled>
+                          Nenhum cliente cadastrado
+                        </SelectItem>
+                      ) : (
+                        clientes.map((c) => (
+                          <SelectItem key={c.id} value={c.id}>
+                            {c.razaoSocialNome}
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
               {errors.clienteId && (
                 <p className="text-xs text-destructive">{errors.clienteId.message}</p>
               )}
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="venda-data">Data</Label>
-              <Input id="venda-data" type="date" {...register('data')} />
+              <Input id="venda-data" className="h-11" type="date" {...register('data')} />
               {errors.data && <p className="text-xs text-destructive">{errors.data.message}</p>}
             </div>
           </div>
@@ -153,6 +198,7 @@ export function VendaFormDialog({
                 type="button"
                 variant="outline"
                 size="sm"
+                className="h-11"
                 onClick={() => append(emptyItem())}
               >
                 <Plus className="size-4" /> Adicionar item
@@ -166,9 +212,37 @@ export function VendaFormDialog({
               >
                 <div className="space-y-1.5 sm:col-span-4">
                   <Label htmlFor={`venda-item-produto-${index}`}>Produto</Label>
-                  <Input
-                    id={`venda-item-produto-${index}`}
-                    {...register(`itens.${index}.produtoId`)}
+                  <Controller
+                    control={control}
+                    name={`itens.${index}.produtoId`}
+                    render={({ field: itemField }) => (
+                      <Select
+                        name={`item-${index}-produto`}
+                        value={itemField.value}
+                        onValueChange={(v) => itemField.onChange(v)}
+                      >
+                        <SelectTrigger
+                          id={`venda-item-produto-${index}`}
+                          aria-label="Produto"
+                          className="h-11"
+                        >
+                          <SelectValue placeholder="Produto" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {produtos.length === 0 ? (
+                            <SelectItem value={NONE} disabled>
+                              Nenhum produto cadastrado
+                            </SelectItem>
+                          ) : (
+                            produtos.map((p) => (
+                              <SelectItem key={p.id} value={p.id}>
+                                {p.descricao}
+                              </SelectItem>
+                            ))
+                          )}
+                        </SelectContent>
+                      </Select>
+                    )}
                   />
                   {errors.itens?.[index]?.produtoId && (
                     <p className="text-xs text-destructive">
@@ -178,16 +252,39 @@ export function VendaFormDialog({
                 </div>
                 <div className="space-y-1.5 sm:col-span-3">
                   <Label htmlFor={`venda-item-lote-${index}`}>Lote</Label>
-                  <Input
-                    id={`venda-item-lote-${index}`}
-                    placeholder="Opcional"
-                    {...register(`itens.${index}.loteId`)}
+                  <Controller
+                    control={control}
+                    name={`itens.${index}.loteId`}
+                    render={({ field: itemField }) => (
+                      <Select
+                        name={`item-${index}-lote`}
+                        value={itemField.value || NONE}
+                        onValueChange={(v) => itemField.onChange(v === NONE ? '' : v)}
+                      >
+                        <SelectTrigger
+                          id={`venda-item-lote-${index}`}
+                          aria-label="Lote"
+                          className="h-11"
+                        >
+                          <SelectValue placeholder="Sem lote" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={NONE}>Sem lote</SelectItem>
+                          {lotes.map((l) => (
+                            <SelectItem key={l.id} value={l.id}>
+                              {l.codigoLote}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
                   />
                 </div>
                 <div className="space-y-1.5 sm:col-span-2">
                   <Label htmlFor={`venda-item-qtd-${index}`}>Qtd.</Label>
                   <Input
                     id={`venda-item-qtd-${index}`}
+                    className="h-11"
                     inputMode="decimal"
                     {...register(`itens.${index}.quantidade`)}
                   />
@@ -201,6 +298,7 @@ export function VendaFormDialog({
                   <Label htmlFor={`venda-item-preco-${index}`}>Preço</Label>
                   <Input
                     id={`venda-item-preco-${index}`}
+                    className="h-11"
                     inputMode="decimal"
                     placeholder="Auto"
                     {...register(`itens.${index}.precoUnitario`)}
@@ -211,6 +309,7 @@ export function VendaFormDialog({
                     type="button"
                     variant="ghost"
                     size="icon"
+                    className="h-11 w-11"
                     aria-label="Remover item"
                     disabled={fields.length <= 1}
                     onClick={() => remove(index)}
@@ -224,7 +323,12 @@ export function VendaFormDialog({
 
           <div className="space-y-1.5">
             <Label htmlFor="venda-observacoes">Observações</Label>
-            <Input id="venda-observacoes" placeholder="Opcional" {...register('observacoes')} />
+            <Input
+              id="venda-observacoes"
+              className="h-11"
+              placeholder="Opcional"
+              {...register('observacoes')}
+            />
           </div>
 
           {showConfirmar && (

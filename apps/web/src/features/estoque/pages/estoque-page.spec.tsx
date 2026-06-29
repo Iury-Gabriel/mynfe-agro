@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -77,9 +77,37 @@ function mockPosicao(saldos: unknown[]) {
         data: { saldos, total: saldos.length, page: 1, perPage: 20, totalPages: 1 },
       })
     }
+    if (url === '/api/produtos') {
+      return Promise.resolve({
+        data: {
+          produtos: [{ id: 'p1', descricao: 'Alface' }],
+          total: 1,
+          page: 1,
+          perPage: 20,
+          totalPages: 1,
+        },
+      })
+    }
+    if (url === '/api/lotes') {
+      return Promise.resolve({
+        data: {
+          lotes: [{ id: 'lt1', codigoLote: 'LT-1' }],
+          total: 1,
+          page: 1,
+          perPage: 20,
+          totalPages: 1,
+        },
+      })
+    }
     return Promise.resolve({
       data: { movimentos: [], total: 0, page: 1, perPage: 20, totalPages: 1 },
     })
+  })
+}
+
+function selectByName(name: string, value: string): void {
+  fireEvent.change(document.querySelector<HTMLSelectElement>(`select[name="${name}"]`)!, {
+    target: { value },
   })
 }
 
@@ -307,7 +335,7 @@ describe('EstoquePage', () => {
     await user.click(screen.getByRole('button', { name: 'Ajuste' }))
     await user.click(screen.getByRole('button', { name: /Registrar ajuste/ }))
 
-    await user.type(screen.getByLabelText('Produto'), 'p1')
+    selectByName('produtoId', 'p1')
     await user.type(screen.getByLabelText('Quantidade'), '12')
     await user.type(screen.getByLabelText('Motivo'), 'inventário')
     await user.click(screen.getByRole('button', { name: 'Registrar ajuste' }))
@@ -329,7 +357,7 @@ describe('EstoquePage', () => {
 
     await user.click(screen.getByRole('button', { name: 'Ajuste' }))
     await user.click(screen.getByRole('button', { name: /Registrar ajuste/ }))
-    await user.type(screen.getByLabelText('Produto'), 'p1')
+    selectByName('produtoId', 'p1')
     await user.type(screen.getByLabelText('Quantidade'), '12')
     await user.type(screen.getByLabelText('Motivo'), 'inventário')
     await user.click(screen.getByRole('button', { name: 'Registrar ajuste' }))

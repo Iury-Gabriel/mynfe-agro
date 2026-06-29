@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useEffect } from 'react'
-import { useForm } from 'react-hook-form'
+import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
 
 import type { RegistrarEmbalagemInput } from '@/features/estoque/api/colheitas-api'
@@ -17,6 +17,16 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { useProdutos } from '@/features/admin/api/produtos-api'
+
+const NONE = '__none__'
 
 const schema = z.object({
   produtoId: z.string().min(1, 'Produto obrigatório').max(60),
@@ -57,11 +67,14 @@ export function RegistrarEmbalagemDialog({
     register,
     handleSubmit,
     reset,
+    control,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: emptyDefaults(),
   })
+
+  const produtos = useProdutos().data?.produtos ?? []
 
   useEffect(() => {
     if (open) reset(emptyDefaults())
@@ -95,14 +108,46 @@ export function RegistrarEmbalagemDialog({
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="embalagem-produto">Produto</Label>
-              <Input id="embalagem-produto" {...register('produtoId')} />
+              <Controller
+                control={control}
+                name="produtoId"
+                render={({ field }) => (
+                  <Select
+                    name="produtoId"
+                    value={field.value}
+                    onValueChange={(v) => field.onChange(v)}
+                  >
+                    <SelectTrigger id="embalagem-produto" aria-label="Produto" className="h-11">
+                      <SelectValue placeholder="Selecione um produto" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {produtos.length === 0 ? (
+                        <SelectItem value={NONE} disabled>
+                          Nenhum produto cadastrado
+                        </SelectItem>
+                      ) : (
+                        produtos.map((p) => (
+                          <SelectItem key={p.id} value={p.id}>
+                            {p.descricao}
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
               {errors.produtoId && (
                 <p className="text-xs text-destructive">{errors.produtoId.message}</p>
               )}
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="embalagem-quantidade">Quantidade</Label>
-              <Input id="embalagem-quantidade" inputMode="decimal" {...register('quantidade')} />
+              <Input
+                id="embalagem-quantidade"
+                className="h-11"
+                inputMode="decimal"
+                {...register('quantidade')}
+              />
               {errors.quantidade && (
                 <p className="text-xs text-destructive">{errors.quantidade.message}</p>
               )}
@@ -112,18 +157,28 @@ export function RegistrarEmbalagemDialog({
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="embalagem-data">Data</Label>
-              <Input id="embalagem-data" type="date" {...register('data')} />
+              <Input id="embalagem-data" className="h-11" type="date" {...register('data')} />
               {errors.data && <p className="text-xs text-destructive">{errors.data.message}</p>}
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="embalagem-validade">Validade</Label>
-              <Input id="embalagem-validade" type="date" {...register('validade')} />
+              <Input
+                id="embalagem-validade"
+                className="h-11"
+                type="date"
+                {...register('validade')}
+              />
             </div>
           </div>
 
           <div className="space-y-1.5">
             <Label htmlFor="embalagem-codigo">Código do lote</Label>
-            <Input id="embalagem-codigo" placeholder="Gerado automaticamente se vazio" {...register('codigoLote')} />
+            <Input
+              id="embalagem-codigo"
+              className="h-11"
+              placeholder="Gerado automaticamente se vazio"
+              {...register('codigoLote')}
+            />
           </div>
 
           <DialogFooter>

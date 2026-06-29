@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -37,9 +37,32 @@ vi.mock('@/stores/active-empresa-store', () => ({
 
 const ALL_PERMS = ['colheita:read', 'colheita:create', 'embalagem:create']
 
+function cadastroFor(url: string): unknown {
+  if (url.includes('/produtos')) {
+    return { produtos: [{ id: 'p1', descricao: 'Alface' }], total: 1, page: 1, perPage: 20, totalPages: 1 }
+  }
+  if (url.includes('/safras')) {
+    return { safras: [{ id: 's1', cultura: 'Verão' }], total: 1, page: 1, perPage: 20, totalPages: 1 }
+  }
+  if (url.includes('/areas')) {
+    return { areas: [{ id: 'a1', identificacao: 'Talhão 1' }], total: 1, page: 1, perPage: 20, totalPages: 1 }
+  }
+  return null
+}
+
 function mockList(colheitas: unknown[]) {
-  vi.mocked(api.get).mockResolvedValue({
-    data: { colheitas, total: colheitas.length, page: 1, perPage: 20, totalPages: 1 },
+  vi.mocked(api.get).mockImplementation((url: string) => {
+    const cadastro = cadastroFor(url)
+    if (cadastro) return Promise.resolve({ data: cadastro })
+    return Promise.resolve({
+      data: { colheitas, total: colheitas.length, page: 1, perPage: 20, totalPages: 1 },
+    })
+  })
+}
+
+function selectByName(name: string, value: string): void {
+  fireEvent.change(document.querySelector<HTMLSelectElement>(`select[name="${name}"]`)!, {
+    target: { value },
   })
 }
 
@@ -128,7 +151,7 @@ describe('ColheitasPage', () => {
     await screen.findByText('Nenhum registro encontrado.')
     await user.click(screen.getByRole('button', { name: /Registrar colheita/ }))
 
-    await user.type(screen.getByLabelText('Produto'), 'p1')
+    selectByName('produtoId', 'p1')
     await user.type(screen.getByLabelText('Quantidade'), '10')
     await user.click(screen.getByRole('button', { name: 'Registrar colheita' }))
 
@@ -149,7 +172,7 @@ describe('ColheitasPage', () => {
 
     await screen.findByText('Nenhum registro encontrado.')
     await user.click(screen.getByRole('button', { name: /Registrar colheita/ }))
-    await user.type(screen.getByLabelText('Produto'), 'p1')
+    selectByName('produtoId', 'p1')
     await user.type(screen.getByLabelText('Quantidade'), '10')
     await user.click(screen.getByRole('button', { name: 'Registrar colheita' }))
 
@@ -167,7 +190,7 @@ describe('ColheitasPage', () => {
     await screen.findByText('Nenhum registro encontrado.')
     await user.click(screen.getByRole('button', { name: /Registrar embalagem/ }))
 
-    await user.type(screen.getByLabelText('Produto'), 'p1')
+    selectByName('produtoId', 'p1')
     await user.type(screen.getByLabelText('Quantidade'), '5')
     await user.click(screen.getByRole('button', { name: 'Registrar embalagem' }))
 
@@ -188,7 +211,7 @@ describe('ColheitasPage', () => {
 
     await screen.findByText('Nenhum registro encontrado.')
     await user.click(screen.getByRole('button', { name: /Registrar embalagem/ }))
-    await user.type(screen.getByLabelText('Produto'), 'p1')
+    selectByName('produtoId', 'p1')
     await user.type(screen.getByLabelText('Quantidade'), '5')
     await user.click(screen.getByRole('button', { name: 'Registrar embalagem' }))
 

@@ -3,7 +3,10 @@ import { z } from 'zod'
 
 import type { UseCaseError } from '@/core/errors/use-case-error'
 
+import { ClienteNotFoundError } from '@/domain/application/use-cases/errors/cliente-not-found-error'
 import { EstoqueInsuficienteError } from '@/domain/application/use-cases/errors/estoque-insuficiente-error'
+import { LoteNotFoundError } from '@/domain/application/use-cases/errors/lote-not-found-error'
+import { ProdutoNotFoundError } from '@/domain/application/use-cases/errors/produto-not-found-error'
 import { RemessaNotFoundError } from '@/domain/application/use-cases/errors/remessa-not-found-error'
 import { TransicaoInvalidaError } from '@/domain/application/use-cases/errors/transicao-invalida-error'
 import { CancelarRemessaUseCase } from '@/domain/application/use-cases/vendas/cancelar-remessa-use-case'
@@ -19,7 +22,12 @@ import { ZodValidationPipe } from '@/infra/http/pipes/zod-validation.pipe'
 import { RemessaPresenter } from '@/infra/http/presenters/admin/remessa-presenter'
 
 function translateRemessaError(err: UseCaseError): CustomHttpException {
-  if (err instanceof RemessaNotFoundError) {
+  if (
+    err instanceof RemessaNotFoundError ||
+    err instanceof ClienteNotFoundError ||
+    err instanceof ProdutoNotFoundError ||
+    err instanceof LoteNotFoundError
+  ) {
     return new CustomHttpException(err.kind, err.message, 404)
   }
   if (err instanceof EstoqueInsuficienteError) {

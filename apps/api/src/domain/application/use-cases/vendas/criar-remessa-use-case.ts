@@ -2,13 +2,17 @@ import { Injectable } from '@nestjs/common'
 
 import { left, right, type Either } from '@/core/either'
 import { UnexpectedError } from '@/core/errors/unexpected-error'
+import { ClienteRepository } from '@/domain/application/repositories/cliente-repository'
 import { EstoqueSaldoRepository } from '@/domain/application/repositories/estoque-saldo-repository'
 import { EstoqueWriteRepository } from '@/domain/application/repositories/estoque-write-repository'
 import { LoteRepository } from '@/domain/application/repositories/lote-repository'
 import { ProdutoRepository } from '@/domain/application/repositories/produto-repository'
 import { RemessaRepository } from '@/domain/application/repositories/remessa-repository'
 import { TabelaPrecoClienteRepository } from '@/domain/application/repositories/tabela-preco-cliente-repository'
+import { ClienteNotFoundError } from '@/domain/application/use-cases/errors/cliente-not-found-error'
 import { EstoqueInsuficienteError } from '@/domain/application/use-cases/errors/estoque-insuficiente-error'
+import { LoteNotFoundError } from '@/domain/application/use-cases/errors/lote-not-found-error'
+import { ProdutoNotFoundError } from '@/domain/application/use-cases/errors/produto-not-found-error'
 import { EstoqueMovimento } from '@/domain/enterprise/entities/estoque-movimento'
 import { EstoqueSaldo } from '@/domain/enterprise/entities/estoque-saldo'
 import { Lote } from '@/domain/enterprise/entities/lote'
@@ -38,7 +42,11 @@ export interface CriarRemessaOutput {
 }
 
 type CriarRemessaResult = Either<
-  EstoqueInsuficienteError | UnexpectedError,
+  | ClienteNotFoundError
+  | ProdutoNotFoundError
+  | LoteNotFoundError
+  | EstoqueInsuficienteError
+  | UnexpectedError,
   CriarRemessaOutput
 >
 
@@ -51,10 +59,23 @@ export class CriarRemessaUseCase {
     private readonly saldos: EstoqueSaldoRepository,
     private readonly lotes: LoteRepository,
     private readonly estoqueWrite: EstoqueWriteRepository,
+    private readonly clientes: ClienteRepository,
   ) {}
 
   async execute(input: CriarRemessaInput): Promise<CriarRemessaResult> {
     try {
+      const cliente = await this.clientes.findById(input.clienteId, input.tenantId)
+      if (cliente === null) {
+        return left(new ClienteNotFoundError())
+      }
+
+      for (const itemInput of input.itens) {
+        const produto = await this.produtos.findById(itemInput.produtoId, input.tenantId)
+        if (produto === null) {
+          return left(new ProdutoNotFoundError())
+        }
+      }
+
       const now = new Date()
 
       const numero = await this.remessas.nextNumero(input.tenantId, input.empresaFaturadoraId)
@@ -122,7 +143,7 @@ export class CriarRemessaUseCase {
         if (itemInput.loteId !== undefined && itemInput.loteId !== null) {
           const lote = await this.lotes.findById(itemInput.loteId, input.tenantId)
           if (lote === null) {
-            return left(new EstoqueInsuficienteError(0, itemInput.quantidade))
+            return left(new LoteNotFoundError())
           }
           const consumoResult = lote.consumir(itemInput.quantidade)
           if (consumoResult.isLeft()) {

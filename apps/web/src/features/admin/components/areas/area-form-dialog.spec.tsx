@@ -1,12 +1,70 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { AreaFormDialog } from './area-form-dialog'
 
 import type { Area } from '@/features/admin/api/areas-api'
+import type { ListFazendasResponse } from '@/features/admin/api/fazendas-api'
 
 import { renderWithProviders } from '@/test/render-with-providers'
+
+const useFazendasMock = vi.fn()
+
+vi.mock('@/features/admin/api/fazendas-api', () => ({
+  useFazendas: () => useFazendasMock(),
+}))
+
+function fazendasResponse(): { data: ListFazendasResponse } {
+  return {
+    data: {
+      fazendas: [
+        {
+          id: 'f1',
+          tenantId: 't1',
+          empresaId: 'e1',
+          nome: 'Fazenda Boa Vista',
+          enderecoLogradouro: null,
+          enderecoNumero: null,
+          enderecoBairro: null,
+          enderecoCep: null,
+          municipio: null,
+          uf: null,
+          latitude: null,
+          longitude: null,
+          car: null,
+          nirfIncra: null,
+          areaTotalHa: null,
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T00:00:00.000Z',
+        },
+        {
+          id: 'f9',
+          tenantId: 't1',
+          empresaId: 'e1',
+          nome: 'Sítio do Sol',
+          enderecoLogradouro: null,
+          enderecoNumero: null,
+          enderecoBairro: null,
+          enderecoCep: null,
+          municipio: null,
+          uf: null,
+          latitude: null,
+          longitude: null,
+          car: null,
+          nirfIncra: null,
+          areaTotalHa: null,
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T00:00:00.000Z',
+        },
+      ],
+      total: 2,
+      page: 1,
+      perPage: 100,
+      totalPages: 1,
+    },
+  }
+}
 
 function makeArea(overrides: Partial<Area> = {}): Area {
   return {
@@ -24,13 +82,35 @@ function makeArea(overrides: Partial<Area> = {}): Area {
   }
 }
 
+function selectFazenda(value: string): void {
+  fireEvent.change(document.querySelector<HTMLSelectElement>('select[name="fazendaId"]')!, {
+    target: { value },
+  })
+}
+
 describe('AreaFormDialog', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    useFazendasMock.mockReturnValue(fazendasResponse())
+  })
+
   it('não renderiza o conteúdo quando open é false', () => {
     renderWithProviders(
       <AreaFormDialog open={false} onOpenChange={vi.fn()} area={null} onSubmit={vi.fn()} isPending={false} />,
     )
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('renderiza as fazendas como opções do select', () => {
+    renderWithProviders(
+      <AreaFormDialog open onOpenChange={vi.fn()} area={null} onSubmit={vi.fn()} isPending={false} />,
+    )
+
+    const select = document.querySelector<HTMLSelectElement>('select[name="fazendaId"]')!
+    const options = Array.from(select.options).map((o) => o.value)
+    expect(options).toContain('f1')
+    expect(options).toContain('f9')
   })
 
   it('valida campos obrigatórios e não chama onSubmit', async () => {
@@ -54,7 +134,7 @@ describe('AreaFormDialog', () => {
       <AreaFormDialog open onOpenChange={vi.fn()} area={null} onSubmit={onSubmit} isPending={false} />,
     )
 
-    await user.type(screen.getByLabelText('Fazenda'), '  f9  ')
+    selectFazenda('f9')
     await user.type(screen.getByLabelText('Identificação'), '  Gleba A  ')
     await user.click(screen.getByRole('button', { name: 'Criar área' }))
 
@@ -76,7 +156,7 @@ describe('AreaFormDialog', () => {
       <AreaFormDialog open onOpenChange={vi.fn()} area={null} onSubmit={onSubmit} isPending={false} />,
     )
 
-    await user.type(screen.getByLabelText('Fazenda'), 'f1')
+    selectFazenda('f1')
     await user.type(screen.getByLabelText('Identificação'), 'Talhão 1')
     await user.type(screen.getByLabelText('Tamanho'), '10')
     await user.type(screen.getByLabelText('Rótulo'), 'Canteiro')
@@ -87,9 +167,23 @@ describe('AreaFormDialog', () => {
 
     await waitFor(() => {
       expect(onSubmit).toHaveBeenCalledWith(
-        expect.objectContaining({ tamanho: 10, unidadeTamanho: 'm2', rotulo: 'Canteiro' }),
+        expect.objectContaining({
+          fazendaId: 'f1',
+          tamanho: 10,
+          unidadeTamanho: 'm2',
+          rotulo: 'Canteiro',
+        }),
       )
     })
+  })
+
+  it('mostra estado vazio quando não há fazendas cadastradas', () => {
+    useFazendasMock.mockReturnValue({ data: undefined })
+    renderWithProviders(
+      <AreaFormDialog open onOpenChange={vi.fn()} area={null} onSubmit={vi.fn()} isPending={false} />,
+    )
+
+    expect(screen.getByText('Nenhuma fazenda cadastrada')).toBeInTheDocument()
   })
 
   it('vem pré-preenchido no modo edição e desabilita o campo fazenda', () => {
@@ -99,7 +193,7 @@ describe('AreaFormDialog', () => {
 
     expect(screen.getByRole('heading', { name: 'Editar área' })).toBeInTheDocument()
     expect(screen.getByLabelText('Identificação')).toHaveValue('Talhão 1')
-    expect(screen.getByLabelText('Fazenda')).toBeDisabled()
+    expect(document.querySelector<HTMLSelectElement>('select[name="fazendaId"]')!.value).toBe('f1')
     expect(screen.getByLabelText('Tamanho')).toHaveValue('12.5')
   })
 

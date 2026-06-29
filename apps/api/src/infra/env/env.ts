@@ -28,7 +28,7 @@ export const envSchema = z.object({
   AUTH_COOKIE_DOMAIN: z.string().optional(),
 
   AUTH_RATE_LIMIT_WINDOW: z.coerce.number().int().positive().default(60),
-  AUTH_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(5),
+  AUTH_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(300),
 
   PERMISSIONS_CACHE_TTL_SECONDS: z.coerce.number().int().positive().default(300),
 

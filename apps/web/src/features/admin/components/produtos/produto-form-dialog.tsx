@@ -24,6 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { useEmpresas } from '@/features/admin/api/empresas-api'
 import { PRODUTO_TIPOS } from '@/features/admin/api/produtos-api'
 
 const produtoSchema = z.object({
@@ -105,6 +106,9 @@ export function ProdutoFormDialog({
 }: ProdutoFormDialogProps): ReactElement {
   const isEdit = produto !== null
 
+  const { data: empresasData } = useEmpresas({ perPage: 100 })
+  const empresas = empresasData?.empresas ?? []
+
   const {
     register,
     handleSubmit,
@@ -124,6 +128,7 @@ export function ProdutoFormDialog({
   }, [open, produto, reset])
 
   const tipo = watch('tipo')
+  const empresaId = watch('empresaId')
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -180,7 +185,29 @@ export function ProdutoFormDialog({
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="produto-empresa">Empresa</Label>
-              <Input id="produto-empresa" {...register('empresaId')} />
+              <Select
+                name="empresaId"
+                value={empresaId}
+                disabled={isEdit}
+                onValueChange={(v) => setValue('empresaId', v, { shouldValidate: true })}
+              >
+                <SelectTrigger id="produto-empresa" aria-label="Empresa">
+                  <SelectValue placeholder="Selecione a empresa" />
+                </SelectTrigger>
+                <SelectContent>
+                  {empresas.length === 0 ? (
+                    <SelectItem value="__empty" disabled>
+                      Nenhuma empresa cadastrada
+                    </SelectItem>
+                  ) : (
+                    empresas.map((e) => (
+                      <SelectItem key={e.id} value={e.id}>
+                        {e.nomeFantasia ?? e.razaoSocial}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
               {errors.empresaId && (
                 <p className="text-xs text-destructive">{errors.empresaId.message}</p>
               )}

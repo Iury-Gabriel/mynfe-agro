@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -31,6 +31,18 @@ const useAuthMock = vi.fn<() => { user: { permissions: string[] } }>()
 vi.mock('@/providers/auth-context', () => ({
   useAuth: () => useAuthMock(),
 }))
+
+vi.mock('@/features/admin/api/empresas-api', () => ({
+  useEmpresas: () => ({
+    data: { empresas: [{ id: 'e1', razaoSocial: 'Agro LTDA', nomeFantasia: 'Agro' }] },
+  }),
+}))
+
+function selectEmpresa(value: string): void {
+  fireEvent.change(document.querySelector<HTMLSelectElement>('select[name="empresaId"]')!, {
+    target: { value },
+  })
+}
 
 const ALL_PERMS = ['fazenda:read', 'fazenda:create', 'fazenda:update', 'fazenda:delete']
 
@@ -132,7 +144,7 @@ describe('FazendasPage', () => {
     await screen.findByText('Nenhum registro encontrado.')
     await user.click(screen.getByRole('button', { name: /Nova fazenda/ }))
 
-    await user.type(screen.getByLabelText('Empresa'), 'e1')
+    selectEmpresa('e1')
     await user.type(screen.getByLabelText('Nome'), 'Fazenda X')
     await user.click(screen.getByRole('button', { name: 'Criar fazenda' }))
 
@@ -150,7 +162,7 @@ describe('FazendasPage', () => {
 
     await screen.findByText('Nenhum registro encontrado.')
     await user.click(screen.getByRole('button', { name: /Nova fazenda/ }))
-    await user.type(screen.getByLabelText('Empresa'), 'e1')
+    selectEmpresa('e1')
     await user.type(screen.getByLabelText('Nome'), 'Fazenda X')
     await user.click(screen.getByRole('button', { name: 'Criar fazenda' }))
 

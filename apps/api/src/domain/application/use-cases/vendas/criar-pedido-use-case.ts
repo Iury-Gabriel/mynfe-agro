@@ -2,9 +2,14 @@ import { Injectable } from '@nestjs/common'
 
 import { left, right, type Either } from '@/core/either'
 import { UnexpectedError } from '@/core/errors/unexpected-error'
+import { ClienteRepository } from '@/domain/application/repositories/cliente-repository'
+import { LoteRepository } from '@/domain/application/repositories/lote-repository'
 import { PedidoRepository } from '@/domain/application/repositories/pedido-repository'
 import { ProdutoRepository } from '@/domain/application/repositories/produto-repository'
 import { TabelaPrecoClienteRepository } from '@/domain/application/repositories/tabela-preco-cliente-repository'
+import { ClienteNotFoundError } from '@/domain/application/use-cases/errors/cliente-not-found-error'
+import { LoteNotFoundError } from '@/domain/application/use-cases/errors/lote-not-found-error'
+import { ProdutoNotFoundError } from '@/domain/application/use-cases/errors/produto-not-found-error'
 import { Pedido } from '@/domain/enterprise/entities/pedido'
 import { PedidoItem } from '@/domain/enterprise/entities/pedido-item'
 import { resolvePreco } from '@/domain/enterprise/services/price-resolver'
@@ -30,7 +35,10 @@ export interface CriarPedidoOutput {
   pedido: Pedido
 }
 
-type CriarPedidoResult = Either<UnexpectedError, CriarPedidoOutput>
+type CriarPedidoResult = Either<
+  ClienteNotFoundError | ProdutoNotFoundError | LoteNotFoundError | UnexpectedError,
+  CriarPedidoOutput
+>
 
 @Injectable()
 export class CriarPedidoUseCase {
@@ -38,10 +46,30 @@ export class CriarPedidoUseCase {
     private readonly pedidos: PedidoRepository,
     private readonly produtos: ProdutoRepository,
     private readonly tabelasPreco: TabelaPrecoClienteRepository,
+    private readonly clientes: ClienteRepository,
+    private readonly lotes: LoteRepository,
   ) {}
 
   async execute(input: CriarPedidoInput): Promise<CriarPedidoResult> {
     try {
+      const cliente = await this.clientes.findById(input.clienteId, input.tenantId)
+      if (cliente === null) {
+        return left(new ClienteNotFoundError())
+      }
+
+      for (const itemInput of input.itens) {
+        const produto = await this.produtos.findById(itemInput.produtoId, input.tenantId)
+        if (produto === null) {
+          return left(new ProdutoNotFoundError())
+        }
+        if (itemInput.loteId !== undefined && itemInput.loteId !== null) {
+          const lote = await this.lotes.findById(itemInput.loteId, input.tenantId)
+          if (lote === null) {
+            return left(new LoteNotFoundError())
+          }
+        }
+      }
+
       const now = new Date()
 
       const numero = await this.pedidos.nextNumero(input.tenantId, input.empresaFaturadoraId)

@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useEffect } from 'react'
-import { useForm } from 'react-hook-form'
+import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
 
 import type { RegistrarColheitaInput } from '@/features/estoque/api/colheitas-api'
@@ -17,6 +17,18 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { useAreas } from '@/features/admin/api/areas-api'
+import { useProdutos } from '@/features/admin/api/produtos-api'
+import { useSafras } from '@/features/admin/api/safras-api'
+
+const NONE = '__none__'
 
 const schema = z.object({
   produtoId: z.string().min(1, 'Produto obrigatório').max(60),
@@ -61,11 +73,16 @@ export function RegistrarColheitaDialog({
     register,
     handleSubmit,
     reset,
+    control,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: emptyDefaults(),
   })
+
+  const produtos = useProdutos().data?.produtos ?? []
+  const safras = useSafras().data?.safras ?? []
+  const areas = useAreas().data?.areas ?? []
 
   useEffect(() => {
     if (open) reset(emptyDefaults())
@@ -101,14 +118,46 @@ export function RegistrarColheitaDialog({
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="colheita-produto">Produto</Label>
-              <Input id="colheita-produto" {...register('produtoId')} />
+              <Controller
+                control={control}
+                name="produtoId"
+                render={({ field }) => (
+                  <Select
+                    name="produtoId"
+                    value={field.value}
+                    onValueChange={(v) => field.onChange(v)}
+                  >
+                    <SelectTrigger id="colheita-produto" aria-label="Produto" className="h-11">
+                      <SelectValue placeholder="Selecione um produto" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {produtos.length === 0 ? (
+                        <SelectItem value={NONE} disabled>
+                          Nenhum produto cadastrado
+                        </SelectItem>
+                      ) : (
+                        produtos.map((p) => (
+                          <SelectItem key={p.id} value={p.id}>
+                            {p.descricao}
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
               {errors.produtoId && (
                 <p className="text-xs text-destructive">{errors.produtoId.message}</p>
               )}
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="colheita-quantidade">Quantidade</Label>
-              <Input id="colheita-quantidade" inputMode="decimal" {...register('quantidade')} />
+              <Input
+                id="colheita-quantidade"
+                className="h-11"
+                inputMode="decimal"
+                {...register('quantidade')}
+              />
               {errors.quantidade && (
                 <p className="text-xs text-destructive">{errors.quantidade.message}</p>
               )}
@@ -118,29 +167,83 @@ export function RegistrarColheitaDialog({
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="colheita-data">Data</Label>
-              <Input id="colheita-data" type="date" {...register('data')} />
+              <Input id="colheita-data" className="h-11" type="date" {...register('data')} />
               {errors.data && <p className="text-xs text-destructive">{errors.data.message}</p>}
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="colheita-validade">Validade</Label>
-              <Input id="colheita-validade" type="date" {...register('validade')} />
+              <Input
+                id="colheita-validade"
+                className="h-11"
+                type="date"
+                {...register('validade')}
+              />
             </div>
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="colheita-safra">Safra</Label>
-              <Input id="colheita-safra" {...register('safraId')} />
+              <Controller
+                control={control}
+                name="safraId"
+                render={({ field }) => (
+                  <Select
+                    name="safraId"
+                    value={field.value || NONE}
+                    onValueChange={(v) => field.onChange(v === NONE ? '' : v)}
+                  >
+                    <SelectTrigger id="colheita-safra" aria-label="Safra" className="h-11">
+                      <SelectValue placeholder="Nenhuma" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={NONE}>Nenhuma</SelectItem>
+                      {safras.map((s) => (
+                        <SelectItem key={s.id} value={s.id}>
+                          {s.cultura}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="colheita-area">Área</Label>
-              <Input id="colheita-area" {...register('areaId')} />
+              <Controller
+                control={control}
+                name="areaId"
+                render={({ field }) => (
+                  <Select
+                    name="areaId"
+                    value={field.value || NONE}
+                    onValueChange={(v) => field.onChange(v === NONE ? '' : v)}
+                  >
+                    <SelectTrigger id="colheita-area" aria-label="Área" className="h-11">
+                      <SelectValue placeholder="Nenhuma" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={NONE}>Nenhuma</SelectItem>
+                      {areas.map((a) => (
+                        <SelectItem key={a.id} value={a.id}>
+                          {a.identificacao}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </div>
           </div>
 
           <div className="space-y-1.5">
             <Label htmlFor="colheita-codigo">Código do lote</Label>
-            <Input id="colheita-codigo" placeholder="Gerado automaticamente se vazio" {...register('codigoLote')} />
+            <Input
+              id="colheita-codigo"
+              className="h-11"
+              placeholder="Gerado automaticamente se vazio"
+              {...register('codigoLote')}
+            />
           </div>
 
           <DialogFooter>

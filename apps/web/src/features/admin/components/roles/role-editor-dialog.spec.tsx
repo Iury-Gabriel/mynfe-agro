@@ -166,7 +166,7 @@ describe('RoleEditorDialog — modo criacao', () => {
       />,
     )
 
-    // Admin category is selected by default — shows admin:users and admin:roles
+    // Dashboard category is selected by default — shows view:dashboard
     const [firstCheckbox] = screen.getAllByRole('checkbox')
     if (!firstCheckbox) throw new Error('checkbox ausente')
     expect(firstCheckbox).not.toBeChecked()
@@ -234,6 +234,11 @@ describe('RoleEditorDialog — modo criacao', () => {
       />,
     )
 
+    // Navega para a categoria Administração (admin:users / admin:roles)
+    const [adminCategory] = screen.getAllByRole('button', { name: /Administração/ })
+    if (!adminCategory) throw new Error('botão de categoria ausente')
+    await user.click(adminCategory)
+
     const searchInput = screen.getByPlaceholderText('Filtrar permissões...')
     await user.type(searchInput, 'users')
 
@@ -272,12 +277,12 @@ describe('RoleEditorDialog — modo criacao', () => {
       />,
     )
 
-    // Click on "Visualizacao" category button (desktop sidebar buttons)
-    const [categoryButton] = screen.getAllByRole('button', { name: /Visualização/ })
+    // Click on "Fiscal" category button (desktop sidebar buttons)
+    const [categoryButton] = screen.getAllByRole('button', { name: /Fiscal/ })
     if (!categoryButton) throw new Error('botão de categoria ausente')
     await user.click(categoryButton)
 
-    expect(screen.getByText('view:dashboard')).toBeInTheDocument()
+    expect(screen.getByText('nota:emitir')).toBeInTheDocument()
   })
 
   it('reseta o formulario ao fechar e reabrir', async () => {
@@ -392,8 +397,9 @@ describe('RoleEditorDialog — modo edicao', () => {
     })
   })
 
-  it('as permissoes pre-selecionadas aparecem como checked', () => {
+  it('as permissoes pre-selecionadas aparecem como checked', async () => {
     const role = makeRole({ permissions: ['admin:users'] })
+    const user = userEvent.setup({ delay: null })
     renderWithProviders(
       <RoleEditorDialog
         open
@@ -404,7 +410,11 @@ describe('RoleEditorDialog — modo edicao', () => {
       />,
     )
 
-    // admin:users should be checked (we're in Admin category by default)
+    // Navega para a categoria Administração onde admin:users vive
+    const [adminCategory] = screen.getAllByRole('button', { name: /Administração/ })
+    if (!adminCategory) throw new Error('botão de categoria ausente')
+    await user.click(adminCategory)
+
     const checkbox = screen.getAllByRole('checkbox').find((cb) => {
       const label = cb.closest('label')
       return label?.textContent?.includes('admin:users')
