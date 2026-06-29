@@ -1,7 +1,7 @@
+import { Menu } from 'lucide-react'
 import { useState } from 'react'
 import { Outlet } from 'react-router-dom'
 
-import { Header } from './header'
 import { Sidebar } from './sidebar'
 import { SidebarNav } from './sidebar-nav'
 
@@ -24,12 +24,17 @@ export function AppShell(): ReactElement {
           <SidebarNav onNavigate={() => setMenuOpen(false)} />
         </SheetContent>
       </Sheet>
-      <div className="flex flex-1 flex-col overflow-hidden">
-        <Header onMenuClick={() => setMenuOpen(true)} />
-        <main className="agroflow agroflow-glow flex-1 overflow-y-auto">
-          <Outlet />
-        </main>
-      </div>
+      <button
+        type="button"
+        aria-label="Abrir menu"
+        onClick={() => setMenuOpen(true)}
+        className="fixed left-3 top-3 z-40 flex size-11 items-center justify-center rounded-xl border border-border/60 bg-background/60 text-foreground backdrop-blur-sm transition-colors hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 md:hidden"
+      >
+        <Menu className="size-5" />
+      </button>
+      <main className="agroflow agroflow-glow flex-1 overflow-y-auto">
+        <Outlet />
+      </main>
     </div>
   )
 }

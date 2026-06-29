@@ -1,5 +1,5 @@
 import {
-  Boxes, Building2, ClipboardList, Coins, FileClock, Layers, LayoutDashboard, Leaf, Map,
+  Boxes, Building2, ClipboardList, Coins, FileClock, Layers, LayoutDashboard, Leaf, LogOut, Map,
   Package, Receipt, ScrollText, Server, Settings, Shield, ShoppingCart, Sprout, Tag, Tags, Truck,
   UserCog, Users, Warehouse, Wheat,
 } from 'lucide-react'
@@ -8,9 +8,27 @@ import { NavLink } from 'react-router-dom'
 import type { LucideIcon } from 'lucide-react'
 import type { ReactElement } from 'react'
 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { EmpresaSwitcher } from '@/features/admin/components/empresas/empresa-switcher'
+import { useSignOut } from '@/features/auth/api/auth-api'
+import { InitialsAvatar } from '@/features/dashboard/components/initials-avatar'
 import { cn } from '@/lib/cn'
 import { hasAnyPermission } from '@/lib/permissions'
 import { useAuth } from '@/providers/auth-context'
+
+function getInitials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean)
+  if (parts.length === 0) return '?'
+  if (parts.length === 1) return parts[0]!.slice(0, 2).toUpperCase()
+  return (parts[0]![0]! + parts[parts.length - 1]![0]!).toUpperCase()
+}
 
 interface SidebarItem { to: string; label: string; icon: LucideIcon; end?: boolean; requiresAny: readonly string[] }
 interface SidebarGroup { label: string; items: readonly SidebarItem[] }
@@ -61,7 +79,9 @@ const PLATFORM_ITEM: SidebarItem = {
 
 export function SidebarNav({ onNavigate }: { onNavigate?: () => void }): ReactElement {
   const { user } = useAuth()
+  const signOut = useSignOut()
   const userPerms = user?.permissions ?? []
+  const canReadEmpresas = hasAnyPermission(userPerms, ['empresa:read'])
   const visibleGroups = GROUPS.map((group) => ({
     ...group,
     items: group.items.filter((item) => hasAnyPermission(userPerms, item.requiresAny)),
@@ -73,14 +93,21 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }): ReactEl
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center gap-2.5 px-5 py-5">
-        <span className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-400 to-green-600 text-white shadow-lg shadow-emerald-900/30">
-          <Leaf className="size-5" />
-        </span>
-        <div className="leading-tight">
-          <p className="text-base font-semibold tracking-tight text-foreground">AgroFlow</p>
-          <p className="text-[11px] text-sidebar-foreground/50">Gestão agro</p>
+      <div className="space-y-3 px-5 py-5">
+        <div className="flex items-center gap-2.5">
+          <span className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-400 to-green-600 text-white shadow-lg shadow-emerald-900/30">
+            <Leaf className="size-5" />
+          </span>
+          <div className="leading-tight">
+            <p className="text-base font-semibold tracking-tight text-foreground">AgroFlow</p>
+            <p className="text-[11px] text-sidebar-foreground/50">Gestão agro</p>
+          </div>
         </div>
+        {canReadEmpresas && (
+          <div className="w-full">
+            <EmpresaSwitcher />
+          </div>
+        )}
       </div>
       <nav className="flex-1 space-y-4 overflow-y-auto px-3 pb-6">
         {visibleGroups.map((group, idx) => (
@@ -105,6 +132,44 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }): ReactEl
           </div>
         ))}
       </nav>
+      {user && (
+        <div className="mt-auto border-t border-sidebar-border px-3 py-3">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                aria-label="Menu do usuário"
+                className="flex min-h-[44px] w-full items-center gap-2.5 rounded-xl px-2 py-1 text-left text-sm transition-colors hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+              >
+                <InitialsAvatar initials={getInitials(user.name)} className="size-9" />
+                <span className="min-w-0 flex-1 leading-tight">
+                  <span className="block truncate font-medium text-foreground">{user.name}</span>
+                  <span className="block truncate text-xs text-sidebar-foreground/50">
+                    {user.email}
+                  </span>
+                </span>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" side="top" className="w-56">
+              <DropdownMenuLabel className="font-normal">
+                <span className="block truncate font-medium text-foreground">{user.name}</span>
+                <span className="block truncate text-xs text-muted-foreground">{user.email}</span>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                disabled={signOut.isPending}
+                onSelect={(e) => {
+                  e.preventDefault()
+                  signOut.mutate()
+                }}
+              >
+                <LogOut />
+                Sair
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      )}
     </div>
   )
 }
