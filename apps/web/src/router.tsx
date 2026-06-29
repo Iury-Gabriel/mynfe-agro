@@ -42,6 +42,27 @@ export async function requirePermission(permission: string) {
   }
 }
 
+export async function requireSuperAdmin() {
+  try {
+    const { data } = await api.get<{ user?: { id: string; isSuperAdmin?: boolean } } | null>(
+      '/api/auth/get-session',
+    )
+    if (!data?.user) {
+      // eslint-disable-next-line @typescript-eslint/only-throw-error
+      throw redirect('/sign-in')
+    }
+    if (!data.user.isSuperAdmin) {
+      // eslint-disable-next-line @typescript-eslint/only-throw-error
+      throw redirect('/app')
+    }
+    return null
+  } catch (err) {
+    if (err instanceof Response) throw err
+    // eslint-disable-next-line @typescript-eslint/only-throw-error
+    throw redirect('/sign-in')
+  }
+}
+
 export const router = createBrowserRouter([
   {
     path: '/',
@@ -108,6 +129,11 @@ export const router = createBrowserRouter([
         path: '/sign-in',
         lazy: () =>
           import('@/features/auth/pages/sign-in-page').then((m) => ({ Component: m.SignInPage })),
+      },
+      {
+        path: '/register',
+        lazy: () =>
+          import('@/features/auth/pages/register-page').then((m) => ({ Component: m.RegisterPage })),
       },
       {
         path: '/forgot-password',
@@ -292,6 +318,14 @@ export const router = createBrowserRouter([
         lazy: () =>
           import('@/features/admin/pages/users-page').then((m) => ({ Component: m.UsersPage })),
         loader: () => requirePermission('admin:users'),
+      },
+      {
+        path: 'platform/tenants',
+        lazy: () =>
+          import('@/features/platform/pages/tenants-page').then((m) => ({
+            Component: m.TenantsPage,
+          })),
+        loader: requireSuperAdmin,
       },
     ],
   },

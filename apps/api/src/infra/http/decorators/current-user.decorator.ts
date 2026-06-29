@@ -8,6 +8,7 @@ export interface SessionUser {
   name: string
   emailVerified: boolean
   tenantId: string | null
+  isSuperAdmin: boolean
   permissions?: readonly Permission[]
   empresaIds?: readonly string[]
 }

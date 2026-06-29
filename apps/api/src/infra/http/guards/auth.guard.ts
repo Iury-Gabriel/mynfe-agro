@@ -36,16 +36,27 @@ export class AuthGuard implements CanActivate {
     if (!session) throw CustomHttpException.unauthorized()
 
     const enriched = session as {
-      user: typeof session.user & { tenantId?: string | null }
+      user: typeof session.user & {
+        tenantId?: string | null
+        isSuperAdmin?: boolean
+        tenantStatus?: string | null
+      }
       permissions?: readonly string[]
       empresaIds?: readonly string[]
     }
+
+    const isSuperAdmin = enriched.user.isSuperAdmin ?? false
+    if (!isSuperAdmin && enriched.user.tenantStatus === 'suspenso') {
+      throw CustomHttpException.forbidden('Tenant suspenso.')
+    }
+
     req.user = {
       id: session.user.id,
       email: session.user.email,
       name: session.user.name,
       emailVerified: session.user.emailVerified,
       tenantId: enriched.user.tenantId ?? null,
+      isSuperAdmin,
       permissions: (enriched.permissions ?? []) as readonly Permission[],
       empresaIds: enriched.empresaIds ?? [],
     }

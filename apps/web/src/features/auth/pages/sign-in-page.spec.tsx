@@ -34,6 +34,13 @@ describe('SignInPage', () => {
     expect(screen.getByLabelText('Senha')).toBeInTheDocument()
   })
 
+  it('exibe o link de cadastro apontando para /register', () => {
+    renderWithProviders(<SignInPage />)
+
+    const link = screen.getByRole('link', { name: 'Cadastre-se' })
+    expect(link).toHaveAttribute('href', '/register')
+  })
+
   it('exibe erros de validação e não chama a API ao enviar vazio', async () => {
     const user = userEvent.setup()
     renderWithProviders(<SignInPage />)

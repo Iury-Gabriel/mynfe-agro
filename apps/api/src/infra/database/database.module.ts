@@ -22,6 +22,7 @@ import { PrismaRemessaRepository } from './prisma/repositories/prisma-remessa-re
 import { PrismaRoleRepository } from './prisma/repositories/prisma-role-repository'
 import { PrismaSafraRepository } from './prisma/repositories/prisma-safra-repository'
 import { PrismaTabelaPrecoClienteRepository } from './prisma/repositories/prisma-tabela-preco-cliente-repository'
+import { PrismaTenantOnboardingWriteRepository } from './prisma/repositories/prisma-tenant-onboarding-write-repository'
 import { PrismaTenantRepository } from './prisma/repositories/prisma-tenant-repository'
 import { PrismaUserRepository } from './prisma/repositories/prisma-user-repository'
 import { PrismaUserRoleAssignmentRepository } from './prisma/repositories/prisma-user-role-assignment-repository'
@@ -48,6 +49,7 @@ import { RemessaRepository } from '@/domain/application/repositories/remessa-rep
 import { RoleRepository } from '@/domain/application/repositories/role-repository'
 import { SafraRepository } from '@/domain/application/repositories/safra-repository'
 import { TabelaPrecoClienteRepository } from '@/domain/application/repositories/tabela-preco-cliente-repository'
+import { TenantOnboardingWriteRepository } from '@/domain/application/repositories/tenant-onboarding-write-repository'
 import { TenantRepository } from '@/domain/application/repositories/tenant-repository'
 import { UserRepository } from '@/domain/application/repositories/user-repository'
 import { UserRoleAssignmentRepository } from '@/domain/application/repositories/user-role-assignment-repository'
@@ -62,6 +64,10 @@ import { VendaWriteRepository } from '@/domain/application/repositories/venda-wr
     { provide: UserRepository, useClass: PrismaUserRepository },
     { provide: EmpresaRepository, useClass: PrismaEmpresaRepository },
     { provide: TenantRepository, useClass: PrismaTenantRepository },
+    {
+      provide: TenantOnboardingWriteRepository,
+      useClass: PrismaTenantOnboardingWriteRepository,
+    },
     { provide: FazendaRepository, useClass: PrismaFazendaRepository },
     { provide: AreaRepository, useClass: PrismaAreaRepository },
     { provide: ClienteRepository, useClass: PrismaClienteRepository },
@@ -93,6 +99,7 @@ import { VendaWriteRepository } from '@/domain/application/repositories/venda-wr
     UserRepository,
     EmpresaRepository,
     TenantRepository,
+    TenantOnboardingWriteRepository,
     FazendaRepository,
     AreaRepository,
     ClienteRepository,
